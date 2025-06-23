@@ -105,7 +105,7 @@
 						:key="resource.url"
 						class="resource"
 						:name="resource.label"
-						:href="resource.url">
+						@click="redirect(resource.url)">
 						<template #icon>
 							<span v-if="resource.iconEmoji" class="resource__icon">
 								{{ resource.iconEmoji }}
@@ -365,7 +365,11 @@ export default {
 				this.loadingName = false
 			}
 		},
-	},
+		redirect(url) {
+			console.log("url", url);
+			window.location.href = url
+		}
+ 	},
 }
 </script>
 
