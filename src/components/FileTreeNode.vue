@@ -14,7 +14,8 @@
                 <template #extra-actions>
                     <NcButton variant="tertiary-no-background" @click="onPreview">
                         <template #icon>
-                            <EyeOutline :size="20" />
+                            <NcLoadingIcon v-if="isPreviewing" :size="20" />
+                            <EyeOutline v-else :size="20" />
                         </template>
                     </NcButton>
                     <NcButton variant="tertiary-no-background" @click="onDownload">
@@ -36,7 +37,6 @@
 
 <script>
 import { createClient } from 'webdav'
-import { getCurrentUser } from '@nextcloud/auth';
 import { NcListItem, NcActionButton, NcButton } from '@nextcloud/vue';
 import { generateUrl, generateRemoteUrl } from '@nextcloud/router';
 import { t, n } from '@nextcloud/l10n';
@@ -44,6 +44,8 @@ import FolderIcon from 'vue-material-design-icons/Folder.vue';
 import FileIcon from 'vue-material-design-icons/File.vue';
 import EyeOutline from 'vue-material-design-icons/EyeOutline.vue';
 import Download from 'vue-material-design-icons/Download.vue';
+
+import { NcLoadingIcon } from '@nextcloud/vue'
 
 const client = createClient(generateRemoteUrl('dav'));
 
@@ -56,7 +58,8 @@ export default {
 		FileIcon,
         EyeOutline,
         Download,
-        NcButton
+        NcButton,
+        NcLoadingIcon
 	},
 	props: {
 		node: {
@@ -68,7 +71,8 @@ export default {
 		return { 
             t, 
             n,
-            isExpanded: false
+            isExpanded: false,
+            isPreviewing: false
         };
 	},
 	computed: {
@@ -83,28 +87,54 @@ export default {
 		}
 	},
 	methods: {
-		onPreview() {
-            const url = `/apps/files/files/${this.node.id}?dir=/${this.node.name}`;
-            window.location.href = generateUrl(url);
-		},
-		onDownload() {
-            const apath = this.node.path;
-            const parts = apath.split('/');
-            
-            [parts[1], parts[2]] = [parts[2], parts[1]];
-            const newPath = parts.join('/');
-
-            const url = new URL(client.getFileDownloadLink(newPath));
-            const hiddenElement = document.createElement('a');
-
-            if(this.node.type === 'folder') {
-                url.searchParams.append('accept', 'zip');
+        async onPreview() {
+            if (this.node.type === 'folder') {
+                this.navigateToFolder(this.node.id, this.node.name);
             } else {
-                hiddenElement.download = this.node.name;
+                this.isPreviewing = true;
+                await this.previewFile(this.node.path, this.node.mimetype);
+                this.isPreviewing = false;
             }
-            
-            hiddenElement.href = url.href;
-            hiddenElement.click();
+        },
+        onDownload() {
+            const path = this.normalizedPath(this.node.path);
+            const downloadUrl = new URL(client.getFileDownloadLink(path));
+
+            if (this.node.type === 'folder') {
+                downloadUrl.searchParams.append('accept', 'zip');
+            }
+
+            this.triggerDownload(downloadUrl.href, this.node.type !== 'folder' ? this.node.name : null);
+        },
+        navigateToFolder(id, name) {
+            const url = generateUrl(`/apps/files/files/${id}?dir=/${name}`);
+            window.location.href = url;
+        },
+        async previewFile(path, mimetype) {
+            const normalized = this.normalizedPath(path);
+            const buffer = await client.getFileContents(normalized, { format: 'binary' });
+            const blob = new Blob([buffer], { type: mimetype });
+            const blobUrl = URL.createObjectURL(blob);
+
+            window.open(blobUrl, '_blank');
+
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        },
+        triggerDownload(href, filename = null) {
+            const link = document.createElement('a');
+            link.href = href;
+            if (filename) link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        },
+        normalizedPath(path) {
+            const parts = path.split('/');
+            if (parts.length >= 3) {
+                [parts[1], parts[2]] = [parts[2], parts[1]];
+            }
+            return parts.join('/');
         },
         toggleExpand() {
             this.isExpanded = !this.isExpanded;
