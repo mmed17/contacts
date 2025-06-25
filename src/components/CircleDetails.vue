@@ -118,7 +118,20 @@
 					</ListItem>
 				</ul>
 			</div>
+			<div class="files-container">
+				<div v-if="loadingFiles" class="loading-placeholder">
+					<NcLoadingIcon />
+				</div>
+				<div v-else-if="fileTree" class="project-files-section">
+					<h2>{{ t('contacts', 'Root Tree') }}</h2>
+					<FileTreeNode :node="fileTree"/>
+				</div>
+				<div v-else class="empty-content">
+					{{ t('contacts', 'No project files found for this team.') }}
+				</div>
+			</div>
 		</section>
+		
 
 		<MemberList v-if="members.length" :list="members" />
 
@@ -184,6 +197,7 @@ import debounce from 'debounce'
 import { generateOcsUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
+import { t } from '@nextcloud/l10n';
 
 import {
 	NcAvatar as Avatar,
@@ -208,6 +222,7 @@ import CircleConfigs from './CircleDetails/CircleConfigs.vue'
 import MemberList from './MemberList/MemberList.vue'
 import ContentHeading from './CircleDetails/ContentHeading.vue'
 import CirclePasswordSettings from './CircleDetails/CirclePasswordSettings.vue'
+import FileTreeNode from './FileTreeNode.vue'
 
 export default {
 	name: 'CircleDetails',
@@ -230,6 +245,7 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		RichContenteditable,
+		FileTreeNode
 	},
 
 	mixins: [CircleActionsMixin],
@@ -247,6 +263,37 @@ export default {
 			showSettingsModal: false,
 			showMembersModal: false,
 			resources: null,
+			loadingFiles: false,
+			fileTree: {
+				"id": 667,
+				"name": "Building Something:20250624220249 - Main Files",
+				"type": "folder",
+				"mimetype": "httpd/unix-directory",
+				"size": 230852,
+				"path": "/admin/files/Building Something:20250624220249 - Main Files",
+				"children": [
+					{
+						"id": 668,
+						"name": "Scrumban",
+						"type": "folder",
+						"mimetype": "httpd/unix-directory",
+						"size": 230852,
+						"path": "/admin/files/Building Something:20250624220249 - Main Files/Scrumban",
+						"children": [
+							{
+								"id": 669,
+								"name": "VoIP Macro-Architecture.png",
+								"type": "file",
+								"mimetype": "image/png",
+								"size": 230852,
+								"path": "/admin/files/Building Something:20250624220249 - Main Files/Scrumban/VoIP Macro-Architecture.png"
+							}
+						],
+						"isEmpty": false
+					}
+				],
+				"isEmpty": false
+			}
 		}
 	},
 

@@ -5,9 +5,9 @@
 
 <template>
 	<section class="member-list">
-		<ContentHeading>
+		<!-- <ContentHeading>
 			{{ t('contacts', 'Team members') }}
-		</ContentHeading>
+		</ContentHeading> -->
 
 		<NcEmptyContent v-if="loading" class="empty-content" :name="t('contacts', 'Loading members list …')">
 			<template #icon>
