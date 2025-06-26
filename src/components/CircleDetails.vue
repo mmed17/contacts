@@ -194,7 +194,7 @@
 import { ref } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import debounce from 'debounce'
-import { generateOcsUrl } from '@nextcloud/router'
+import { generateOcsUrl, generateUrl } from '@nextcloud/router'
 import { showError } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import { t } from '@nextcloud/l10n';
@@ -263,40 +263,22 @@ export default {
 			showSettingsModal: false,
 			showMembersModal: false,
 			resources: null,
-			loadingFiles: false,
-			fileTree: {
-				"id": 667,
-				"name": "Building Something:20250624220249 - Main Files",
-				"type": "folder",
-				"mimetype": "httpd/unix-directory",
-				"size": 230852,
-				"path": "/admin/files/Building Something:20250624220249 - Main Files",
-				"children": [
-					{
-						"id": 668,
-						"name": "Scrumban",
-						"type": "folder",
-						"mimetype": "httpd/unix-directory",
-						"size": 230852,
-						"path": "/admin/files/Building Something:20250624220249 - Main Files/Scrumban",
-						"children": [
-							{
-								"id": 669,
-								"name": "VoIP Macro-Architecture.png",
-								"type": "file",
-								"mimetype": "image/png",
-								"size": 230852,
-								"path": "/admin/files/Building Something:20250624220249 - Main Files/Scrumban/VoIP Macro-Architecture.png"
-							}
-						],
-						"isEmpty": false
-					}
-				],
-				"isEmpty": false
-			}
+			loadingFiles: true,
+			fileTree: null
 		}
 	},
 
+	async mounted() {
+		const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/circle/${this.circle.id}/files`);
+		const response = await axios.get(url, {
+			headers: {
+				'OCS-APIRequest': 'true',
+				'Content-Type': 'application/json'
+			}
+		});
+		this.fileTree = response.data;
+		this.loadingFiles = false;
+	},
 	computed: {
 		descriptionPlaceholder() {
 			if (this.circle.description.trim() === '') {
