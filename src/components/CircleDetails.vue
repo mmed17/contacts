@@ -256,9 +256,8 @@ import { getCurrentUser } from '@nextcloud/auth'
 export const PROJECT_TYPES = [
 	{ id: 0, label: t('projectcreatoraio', 'Combi') },
 	{ id: 1, label: t('projectcreatoraio', 'Solo Elektra ') },
-	{ id: 2, label: t('projectcreatoraio', 'Research Project') },
-	{ id: 3, label: t('projectcreatoraio', 'Solo Water') },
-	{ id: 4, label: t('projectcreatoraio', 'Custom ') }
+	{ id: 2, label: t('projectcreatoraio', 'Solo Water') },
+	{ id: 3, label: t('projectcreatoraio', 'Custom ') }
 ];
 
 export default {
