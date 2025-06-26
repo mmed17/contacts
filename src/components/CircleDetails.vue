@@ -57,20 +57,50 @@
 			</template>
 		</DetailsHeader>
 
-		<section v-if="showDescription" class="circle-details-section">
-			<ContentHeading :loading="loadingDescription">
-				{{ t('contacts', 'Description') }}
-			</ContentHeading>
+		<section v-if="project" class="project-details-section">
+			<div class="metadata-grid">
+				<div>
+					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Project') }}</ContentHeading>
+					<p>{{ project.name }}</p>
+				</div>
+				<div>
+					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Number') }}</ContentHeading>
+					<p>{{ project.number }}</p>
+				</div>
+				<div>
+					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Address') }}</ContentHeading>
+					<p>{{ project.address || t('projectcreatoraio', 'Not provided') }}</p>
+				</div>
+			</div>
 
-			<RichContenteditable :value.sync="circle.description"
-				:auto-complete="onAutocomplete"
-				:maxlength="1024"
-				:multiline="true"
-				:contenteditable="false"
-				:placeholder="descriptionPlaceholder"
-				class="circle-details-section__description"
-				@update:value="onDescriptionChangeDebounce" />
+			<div class="metadata-grid">
+				<div>
+					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Type') }}</ContentHeading>
+					<p>{{ projectTypeLabel || t('projectcreatoraio', 'Not provided') }}</p>
+				</div>
+				<div>
+					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Description') }}</ContentHeading>
+					<RichContenteditable
+						:value="project.description"
+						:contenteditable="false"
+						:placeholder="t('projectcreatoraio', 'No description provided')"
+						class="project-description-content" />
+				</div>
+				<div class="status-section">
+					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Status') }}</ContentHeading>
+					<NcSelect
+						v-model="currentStatusLabel"
+						:options="statusOptions"
+						:disabled="!isAdmin"
+						@update:modelValue="updateProjectStatus"
+						class="status-select"
+					/>
+				</div>
+			</div>
 		</section>
+		<div v-else class="loading-placeholder">
+			<NcLoadingIcon />
+		</div>
 
 		<!-- not a member -->
 		<template v-if="!circle.isMember">
@@ -119,10 +149,7 @@
 				</ul>
 			</div>
 			<div class="files-container">
-				<div v-if="loadingFiles" class="loading-placeholder">
-					<NcLoadingIcon />
-				</div>
-				<div v-else-if="fileTree" class="project-files-section">
+				<div v-if="fileTree" class="project-files-section">
 					<h2>{{ t('contacts', 'Root Tree') }}</h2>
 					<FileTreeNode :node="fileTree"/>
 				</div>
@@ -207,8 +234,9 @@ import {
 	NcLoadingIcon,
 	NcModal as Modal,
 	NcRichContenteditable as RichContenteditable,
+	NcSelect
 } from '@nextcloud/vue'
-
+import NcChip from '@nextcloud/vue/components/NcChip'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Login from 'vue-material-design-icons/Login.vue'
 import Logout from 'vue-material-design-icons/Logout.vue'
@@ -223,6 +251,15 @@ import MemberList from './MemberList/MemberList.vue'
 import ContentHeading from './CircleDetails/ContentHeading.vue'
 import CirclePasswordSettings from './CircleDetails/CirclePasswordSettings.vue'
 import FileTreeNode from './FileTreeNode.vue'
+import { getCurrentUser } from '@nextcloud/auth'
+
+export const PROJECT_TYPES = [
+	{ id: 0, label: t('projectcreatoraio', 'Combi') },
+	{ id: 1, label: t('projectcreatoraio', 'Solo Elektra ') },
+	{ id: 2, label: t('projectcreatoraio', 'Research Project') },
+	{ id: 3, label: t('projectcreatoraio', 'Solo Water') },
+	{ id: 4, label: t('projectcreatoraio', 'Custom ') }
+];
 
 export default {
 	name: 'CircleDetails',
@@ -245,7 +282,9 @@ export default {
 		NcEmptyContent,
 		NcLoadingIcon,
 		RichContenteditable,
-		FileTreeNode
+		FileTreeNode,
+		NcSelect,
+		NcChip
 	},
 
 	mixins: [CircleActionsMixin],
@@ -263,23 +302,54 @@ export default {
 			showSettingsModal: false,
 			showMembersModal: false,
 			resources: null,
-			loadingFiles: true,
-			fileTree: null
 		}
 	},
-
-	async mounted() {
-		const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/circle/${this.circle.id}/files`);
-		const response = await axios.get(url, {
-			headers: {
-				'OCS-APIRequest': 'true',
-				'Content-Type': 'application/json'
-			}
-		});
-		this.fileTree = response.data;
-		this.loadingFiles = false;
+	props: {
+		project: {
+			type: Object,
+			required: false
+		},
+		fileTree: {
+			type: Object,
+			required: false
+		}
 	},
 	computed: {
+		isAdmin() {
+			return !!getCurrentUser()?.isAdmin;
+		},
+
+		projectTypeLabel() {
+			if (!this.project || !PROJECT_TYPES) {
+				return '';
+			}
+			const typeInfo = PROJECT_TYPES[this.project.type];
+			return typeInfo ? typeInfo.label : 'Unknown';
+		},
+
+		statusOptions() {
+			return [
+				{ id: 0, label: this.t('projectcreatoraio', 'Archived') },
+				{ id: 1, label: this.t('projectcreatoraio', 'Active') },
+			];
+		},
+
+		currentStatusLabel: {
+			get() {
+				return this.statusOptions.find(opt => opt.id === this.project.status);
+			},
+			set(option) {
+				this.project.status = option ? option.id : null;
+			}
+		},
+
+		statusClass() {
+			return {
+				'status--active': this.project.status === 1,
+				'status--archived': this.project.status === 0,
+			};
+		},
+		
 		descriptionPlaceholder() {
 			if (this.circle.description.trim() === '') {
 				return t('contacts', 'There is no description for this team')
@@ -395,9 +465,29 @@ export default {
 			}
 		},
 		redirect(url) {
-			console.log("url", url);
 			window.location.href = url
-		}
+		},
+		async updateProjectStatus(status) {
+			try {
+				if (!this.isAdmin) {
+					return;
+				}
+				
+				const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/${this.project.id}/status`);
+
+				const response = await axios.put(`${url}`, { status: status.id }, {
+					headers: {
+						'OCS-APIRequest': 'true',
+						'Content-Type': 'application/json'
+					}
+				});
+
+				window.OC.Notification.show(t('projectcreatoraio', 'Status updated'))
+			} catch(error) {
+				console.error(error);
+				window.OC.Notification.show(t('projectcreatoraio', 'Update failed'), { type: 'error' });
+			}
+		},
  	},
 }
 </script>
@@ -502,5 +592,72 @@ export default {
 	&:deep(.line-one__name) {
 		font-weight: normal;
 	}
+}
+
+.project-details-section {
+    display: flex;
+    flex-direction: column;
+    gap: 24px; /* A bit more space between sections */
+    margin-top: 24px;
+}
+
+.project-header {
+    display: flex;
+    align-items: center;
+    gap: 16px; /* Increased gap for better spacing */
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 16px;
+}
+
+.project-name {
+    margin: 0;
+    font-size: 1.7em;
+    font-weight: 600;
+}
+
+/* NcChip will now be styled by the component library, no custom CSS needed for it. */
+
+.metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+}
+
+.metadata-grid p {
+    margin-top: 4px;
+    color: var(--color-text-light);
+}
+
+/* Style for the description content to match Nextcloud's look and feel */
+.project-description-content {
+    margin-top: 4px;
+    color: var(--color-text-light);
+    line-height: 1.5;
+}
+
+.status-section {
+    /* Styles for the status section remain the same */
+}
+
+.status-chip {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.status-chip.status--active {
+    background-color: var(--color-success-element);
+    color: var(--color-success-element-text);
+}
+
+.status-chip.status--archived {
+    background-color: var(--color-main-background-border);
+    color: var(--color-text-light);
+}
+
+.status-select {
+    max-width: 250px;
 }
 </style>

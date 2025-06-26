@@ -17,7 +17,10 @@
 			</template>
 		</EmptyContent>
 
-		<CircleDetails v-else :circle="circle" />
+		<CircleDetails v-else 
+			:circle="circle" 
+			:project="project" 
+			:file-tree="fileTree" />
 	</AppContent>
 </template>
 <script>
@@ -31,6 +34,8 @@ import {
 import AccountGroup from 'vue-material-design-icons/AccountGroup.vue'
 import CircleDetails from '../CircleDetails.vue'
 import RouterMixin from '../../mixins/RouterMixin.js'
+import { generateUrl } from '@nextcloud/router'
+import axios from 'axios'
 
 export default {
 	name: 'CircleContent',
@@ -55,6 +60,8 @@ export default {
 	data() {
 		return {
 			loadingList: false,
+			fileTree: null,
+			project: null,
 		}
 	},
 
@@ -83,14 +90,16 @@ export default {
 	watch: {
 		circle(newCircle) {
 			if (newCircle?.id) {
-				this.fetchCircleMembers(newCircle.id)
+				this.fetchCircleMembers(newCircle.id);
+				this.fetchProjectOfCircle(this.circle.id);
 			}
 		},
 	},
 
 	beforeMount() {
 		if (this.circle?.id) {
-			this.fetchCircleMembers(this.circle.id)
+			this.fetchCircleMembers(this.circle.id);
+			this.fetchProjectOfCircle(this.circle.id);
 		}
 	},
 
@@ -107,6 +116,21 @@ export default {
 			} finally {
 				this.loadingList = false
 			}
+		},
+		async fetchProjectOfCircle(circleId) {
+			this.project = null;
+			this.fileTree = null;
+			
+			const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/circle/${circleId}/files`);
+			const response = await axios.get(url, {
+				headers: {
+					'OCS-APIRequest': 'true',
+					'Content-Type': 'application/json'
+				}
+			});
+
+			this.fileTree = response.data.tree;
+			this.project = response.data.project;
 		},
 	},
 }
