@@ -93,8 +93,7 @@
 						:options="statusOptions"
 						:disabled="!isAdmin"
 						@update:modelValue="updateProjectStatus"
-						class="status-select"
-					/>
+						class="status-select" />
 				</div>
 			</div>
 		</section>
@@ -149,9 +148,9 @@
 				</ul>
 			</div>
 			<div class="files-container">
-				<div v-if="fileTree" class="project-files-section">
+				<div v-if="files" class="project-files-section">
 					<h2>{{ t('contacts', 'Root Tree') }}</h2>
-					<FileTreeNode :node="fileTree"/>
+					<FileTreeNode :node="files"/>
 				</div>
 				<div v-else class="empty-content">
 					{{ t('contacts', 'No project files found for this team.') }}
@@ -308,7 +307,7 @@ export default {
 			type: Object,
 			required: false
 		},
-		fileTree: {
+		files: {
 			type: Object,
 			required: false
 		}

@@ -20,7 +20,7 @@
 		<CircleDetails v-else 
 			:circle="circle" 
 			:project="project" 
-			:file-tree="fileTree" />
+			:files="files" />
 	</AppContent>
 </template>
 <script>
@@ -60,8 +60,8 @@ export default {
 	data() {
 		return {
 			loadingList: false,
-			fileTree: null,
 			project: null,
+			files: null,
 		}
 	},
 
@@ -91,7 +91,7 @@ export default {
 		circle(newCircle) {
 			if (newCircle?.id) {
 				this.fetchCircleMembers(newCircle.id);
-				this.fetchProjectOfCircle(this.circle.id);
+				this.fetchProjectDetails(this.circle.id);
 			}
 		},
 	},
@@ -99,7 +99,7 @@ export default {
 	beforeMount() {
 		if (this.circle?.id) {
 			this.fetchCircleMembers(this.circle.id);
-			this.fetchProjectOfCircle(this.circle.id);
+			this.fetchProjectDetails(this.circle.id);
 		}
 	},
 
@@ -117,11 +117,16 @@ export default {
 				this.loadingList = false
 			}
 		},
-		async fetchProjectOfCircle(circleId) {
+		async fetchProjectDetails(circleId) {
 			this.project = null;
-			this.fileTree = null;
+			this.files  = null;
 			
-			const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/circle/${circleId}/files`);
+			this.project = await this.getProjectOfCircleId(circleId);
+			this.files   = await this.getProjectFiles(this.project.id);
+		},
+
+		async getProjectOfCircleId(circleId) {
+			const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/circle/${circleId}`);
 			const response = await axios.get(url, {
 				headers: {
 					'OCS-APIRequest': 'true',
@@ -129,9 +134,19 @@ export default {
 				}
 			});
 
-			this.fileTree = response.data.tree;
-			this.project = response.data.project;
+			return response.data.project;
 		},
+		async getProjectFiles(projectId) {
+			const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/${projectId}/files`);
+			const response = await axios.get(url, {
+				headers: {
+					'OCS-APIRequest': 'true',
+					'Content-Type': 'application/json'
+				}
+			});
+
+			return response.data.files;
+		}
 	},
 }
 </script>
