@@ -462,9 +462,6 @@ export default {
 				this.loadingName = false
 			}
 		},
-		redirect(url) {
-			window.location.href = url
-		},
 		async updateProjectStatus(status) {
 			try {
 				if (!this.isAdmin) {
