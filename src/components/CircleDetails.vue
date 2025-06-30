@@ -134,7 +134,7 @@
 						:key="resource.url"
 						class="resource"
 						:name="resource.label"
-						@click="redirect(resource.url)">
+						:href="resource.url">
 						<template #icon>
 							<span v-if="resource.iconEmoji" class="resource__icon">
 								{{ resource.iconEmoji }}
