@@ -134,7 +134,7 @@
 						:key="resource.url"
 						class="resource"
 						:name="resource.label"
-						:href="resource.url">
+						:href="redirect">
 						<template #icon>
 							<span v-if="resource.iconEmoji" class="resource__icon">
 								{{ resource.iconEmoji }}
@@ -486,6 +486,9 @@ export default {
 				window.OC.Notification.show(t('projectcreatoraio', 'Update failed'), { type: 'error' });
 			}
 		},
+		redirect(url) {
+			window.open(url, '_blank');
+		}
  	},
 }
 </script>
