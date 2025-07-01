@@ -134,7 +134,7 @@
 						:key="resource.url"
 						class="resource"
 						:name="resource.label"
-						:href="redirect">
+						@click="redirect(resource.url)">
 						<template #icon>
 							<span v-if="resource.iconEmoji" class="resource__icon">
 								{{ resource.iconEmoji }}
@@ -150,7 +150,7 @@
 			<div class="files-container">
 				<div v-if="files" class="project-files-section">
 					<h2>{{ t('contacts', 'Root Tree') }}</h2>
-					<FileTreeNode :node="files"/>
+					<FileTreeNode v-for="file in files" :key="file.id" :node="file"/>
 				</div>
 				<div v-else class="empty-content">
 					{{ t('contacts', 'No project files found for this team.') }}
@@ -484,7 +484,7 @@ export default {
 			}
 		},
 		redirect(url) {
-			window.open(url, '_blank');
+			window.open(url, '_self');
 		}
  	},
 }
