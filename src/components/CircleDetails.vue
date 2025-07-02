@@ -152,12 +152,12 @@
 					<h2>{{ t('contacts', 'Root Tree') }}</h2>
 					<FileTreeNode 
 						v-for="file in files.shared" 
-						:key="file.id" 
+						:key="file.id"
 						:node="file"/>
 
 					<FileTreeNode 
 						v-for="file in files.private" 
-						:key="file.id" 
+						:key="file.id"
 						:node="file"/>
 				</div>
 				<div v-else class="empty-content">
