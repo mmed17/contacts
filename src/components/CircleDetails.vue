@@ -150,8 +150,15 @@
 			<div class="files-container">
 				<div v-if="files" class="project-files-section">
 					<h2>{{ t('contacts', 'Root Tree') }}</h2>
-					<FileTreeNode v-for="file in files.private" :key="file.id" :node="file"/>
-					<FileTreeNode v-for="file in files.shared" :key="file.id" :node="file"/>
+					<FileTreeNode 
+						v-for="file in files.shared" 
+						:key="file.id" 
+						:node="file"/>
+
+					<FileTreeNode 
+						v-for="file in files.private" 
+						:key="file.id" 
+						:node="file"/>
 				</div>
 				<div v-else class="empty-content">
 					{{ t('contacts', 'No project files found for this team.') }}
