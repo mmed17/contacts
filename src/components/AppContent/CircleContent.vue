@@ -124,7 +124,6 @@ export default {
 			this.project = await this.getProjectOfCircleId(circleId);
 			this.files   = await this.getProjectFiles(this.project.id);
 		},
-
 		async getProjectOfCircleId(circleId) {
 			const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/circle/${circleId}`);
 			const response = await axios.get(url, {
