@@ -442,7 +442,12 @@ export default {
 					},
 				})
 			} catch (error) {
-				showError(t('contacts', 'An error happened during the creation of the team'))
+				console.log(error);
+				if(error?.response?.data?.ocs?.meta?.message) { 
+					showError(t('contacts', error.response.data.ocs.meta.message))
+				} else {
+					showError(t('contacts', 'An error happened during the creation of the team'))
+				}
 			} finally {
 				this.createCircleLoading = false
 			}

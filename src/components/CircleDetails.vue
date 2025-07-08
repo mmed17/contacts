@@ -165,11 +165,11 @@
 				</div>
 			</div>
 		</section>
-		
 
 		<MemberList v-if="members.length" :list="members" />
 
-		<Modal v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal && showSettingsModal" @close="showSettingsModal=false">
+		<Modal 
+			v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal && showSettingsModal" @close="showSettingsModal=false">
 			<div class="circle-settings">
 				<h2>{{ t('contacts', 'Team settings') }}</h2>
 
