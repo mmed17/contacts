@@ -2,6 +2,7 @@
   - SPDX-FileCopyrightText: 2021 Nextcloud GmbH and Nextcloud contributors
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
+
 <template>
     <div class="circle-details">
         <DetailsHeader>
@@ -34,7 +35,6 @@
         </DetailsHeader>
 
         <section v-if="project" class="project-details-container">
-            
             <div class="section-wrapper">
                 <div class="section-header">
                     <h3 class="modern-header">{{ t('projectcreatoraio', 'Project Details') }}</h3>
@@ -243,8 +243,52 @@
                 <template #icon><IconAccountGroup :size="20" /></template>
             </NcEmptyContent>
         </template>
+        
+		<section>
+			<div class="section-wrapper mt-4">
+                <div class="section-header">
+					<h2>{{ t('contacts', 'Workspace') }}</h2>
+                </div>
 
-        <MemberList v-if="members.length" :list="members" />
+                <div v-if="deckUrl" class="workspace-card mb-4">
+                    <div class="workspace-header">
+                        <span class="workspace-title">
+                            <IconDeck :size="20" />
+							{{ t('projectcreatoraio', 'Project Deck') }}
+                        </span>
+                        <a :href="deckUrl" target="_blank" class="workspace-link">
+                            {{ t('projectcreatoraio', 'Open in App') }} <span class="icon-external"></span>
+                        </a>
+                    </div>
+                    <div class="iframe-container">
+						<div v-if="loadingDeck" class="iframe-loader">
+                            <NcLoadingIcon :size="40" />
+                            <p>{{ t('projectcreatoraio', 'Loading Board...') }}</p>
+                        </div>
+                        <iframe :src="deckUrl" class="embedded-frame" @load="onDeckIframeLoad"></iframe>
+                    </div>
+                </div>
+                <div v-else class="empty-workspace">
+                    <NcEmptyContent :title="t('projectcreatoraio', 'No Deck Board linked')" />
+                </div>
+
+                <div v-if="whiteboardUrl" class="workspace-card">
+                    <div class="workspace-header">
+                        <span class="workspace-title">
+                            {{ t('projectcreatoraio', 'Whiteboard') }}
+                        </span>
+                        <a :href="whiteboardUrl" target="_blank" class="workspace-link">
+                            {{ t('projectcreatoraio', 'Open Fullscreen') }} <span class="icon-external"></span>
+                        </a>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe :src="whiteboardUrl" class="embedded-frame"></iframe>
+                    </div>
+                </div>
+            </div>
+		</section>
+
+		<MemberList v-if="members.length" :list="members" />
 
         <Modal v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal && showSettingsModal" @close="showSettingsModal=false">
             <div class="circle-settings">
@@ -303,6 +347,7 @@ import ContentHeading from './CircleDetails/ContentHeading.vue'
 import CirclePasswordSettings from './CircleDetails/CirclePasswordSettings.vue'
 import FileTreeNode from './FileTreeNode.vue'
 import { getCurrentUser } from '@nextcloud/auth'
+import IconDeck from 'vue-material-design-icons/ViewColumn.vue'
 
 export const PROJECT_TYPES = [
 	{ id: 0, label: t('projectcreatoraio', 'Combi') },
@@ -340,7 +385,8 @@ export default {
 		FileTreeNode,
 		NcSelect,
 		NcChip,
-		NcTextField
+		NcTextField,
+		IconDeck
 	},
 
 	mixins: [CircleActionsMixin],
@@ -363,6 +409,7 @@ export default {
 			resources: null,
 
 			// NEW DATA FOR EDIT MODE
+			loadingDeck: true,
 			editingSection: null, // 'project', 'client', 'location', 'timeline'            
 			savingProject: false,
             editForm: {
@@ -495,6 +542,17 @@ export default {
 				return this.resources?.filter(res => res.provider.id === providerId) ?? []
 			}
 		},
+
+		deckUrl() {
+			if (!this.project || !this.project.boardId) return null;
+            // Standard Nextcloud Deck URL. Adjust if your setup is different.
+            return generateUrl(`/apps/deck/board/${this.project.boardId}`);
+        },
+
+        whiteboardUrl() {
+            if (!this.project || !this.project.whiteboardId) return null; 
+            return generateUrl(`/apps/whiteboard/board/${this.project.whiteboardId}`);
+        }
 	},
 
 	watch: {
@@ -614,6 +672,7 @@ export default {
 
                 // 3. Send only the clean payload
                 const response = await axios.put(url, payload);
+				Object.assign(this.project, response.data);
                 
                 showSuccess(t('projectcreatoraio', 'Section saved successfully'));
                 this.editingSection = null;
@@ -622,6 +681,33 @@ export default {
                 showError(t('projectcreatoraio', 'Could not save details'));
             } finally {
                 this.savingProject = false;
+            }
+        },
+		onDeckIframeLoad(event) {
+            const iframe = event.target;
+            try {
+                // 1. Access the document inside the iframe
+                const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // 2. Create a style element
+                const style = innerDoc.createElement('style');
+                
+                // 3. Write CSS to hide the header and fix spacing
+                // #header: The top blue/black bar
+                // #content: The main container (usually has padding-top for the header)
+                style.textContent = `
+                    header, #header, .header-bar { display: none !important; }
+					.app-navigation-toggle-wrapper { display: none !important; }
+					#content-vue { margin: 0 !important; height: 100vh; width: 100%; border-radius: 0; }
+					.board-wrapper { max-height: 100vh !important; }
+					.app-navigation { display: none !important; }
+                `;
+                
+                // 4. Append it to the iframe's head
+                innerDoc.head.appendChild(style);
+				this.loadingDeck = false;
+            } catch (e) {
+                console.warn('Could not hide iframe header. Likely a cross-origin restriction.', e);
             }
         },
  	},
@@ -634,7 +720,7 @@ export default {
    ========================================= */
 
 .project-details-container {
-    max-width: 900px;
+    // max-width: 900px;
     margin: 20px auto 60px auto;
     font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
 }
@@ -868,5 +954,72 @@ export default {
 
 .circle-details-section__configs {
     margin-bottom: 15px;
+}
+
+/* WORKSPACE STYLES */
+.workspace-card {
+    background-color: var(--color-main-background, #fff);
+    border: 1px solid var(--color-border, #ededed);
+    border-radius: 12px;
+    overflow: hidden; /* Ensures iframe corners match border-radius */
+    margin-bottom: 24px;
+}
+
+.workspace-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background-color: var(--color-background-hover); /* Slight contrast for header */
+    border-bottom: 1px solid var(--color-border);
+}
+
+.workspace-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--color-main-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.workspace-link {
+    font-size: 13px;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.iframe-container {
+    position: relative;
+    width: 100%;
+    height: 600px; /* Fixed height for the board view */
+}
+
+.iframe-loader {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--color-text-maxcontrast);
+    gap: 10px;
+    z-index: 10; /* Sits above iframe */
+    background-color: var(--color-main-background);
+}
+
+.embedded-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+.icon-deck {
+    /* You can use a Nextcloud icon class here or an SVG */
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: var(--icon-deck-000); /* Requires deck app css loaded, or use generic icon */
+    background-size: contain;
+    background-repeat: no-repeat;
 }
 </style>
