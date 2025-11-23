@@ -119,14 +119,14 @@
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><NcTextField :value.sync="editForm.client_role" /></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><NcTextField :value.sync="editForm.client_phone" /></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><NcTextField :value.sync="editForm.client_email" /></div>
-                            <div class="field-group full-width"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><NcTextField :value.sync="editForm.client_address" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><NcTextField :value.sync="editForm.client_address" /></div>
                         </div>
                         <div v-else key="view" class="grid-layout">
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Name') }}</label><div class="value-text">{{ project.client_name || '-' }}</div></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><div class="value-text">{{ project.client_role || '-' }}</div></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><div class="value-text">{{ project.client_phone || '-' }}</div></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><div class="value-text">{{ project.client_email || '-' }}</div></div>
-                            <div class="field-group full-width"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><div class="value-text">{{ project.client_address || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><div class="value-text">{{ project.client_address || '-' }}</div></div>
                         </div>
                     </transition>
                 </div>
@@ -189,7 +189,9 @@
                         <div v-if="editingSection === 'timeline'" key="edit" class="grid-layout">
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><NcTextField type="date" :value.sync="editForm.date_start" /></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><NcTextField type="date" :value.sync="editForm.date_end" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="statusOptions" :disabled="!isAdmin"/></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="STATUS_OPTIONS" :disabled="!isAdmin"/></div>
+
+							{{  currentStatusLabel  }}
                         </div>
                         <div v-else key="view" class="grid-layout">
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><div class="value-text">{{ project.date_start || '-' }}</div></div>
@@ -271,7 +273,7 @@ import { ref } from 'vue'
 import { useElementSize } from '@vueuse/core'
 import debounce from 'debounce'
 import { generateOcsUrl, generateUrl } from '@nextcloud/router'
-import { showError } from '@nextcloud/dialogs'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
 import { t } from '@nextcloud/l10n';
 
@@ -309,6 +311,11 @@ export const PROJECT_TYPES = [
 	{ id: 1, label: t('projectcreatoraio', 'Solo Elektra ') },
 	{ id: 2, label: t('projectcreatoraio', 'Solo Water') },
 	{ id: 3, label: t('projectcreatoraio', 'Custom ') }
+];
+
+export const STATUS_OPTIONS = [
+	{ id: 0, label: t('projectcreatoraio', 'Archived') },
+	{ id: 1, label: t('projectcreatoraio', 'Active') },
 ];
 
 export default {
@@ -349,6 +356,7 @@ export default {
 	data() {
 		return {
 			PROJECT_TYPES, // exposing types 
+			STATUS_OPTIONS, // exposing options
 
 			loadingDescription: false,
 			loadingName: false,
@@ -400,15 +408,8 @@ export default {
 			if (!this.project || !PROJECT_TYPES) {
 				return '';
 			}
-			const typeInfo = PROJECT_TYPES[this.project.type];
+			const typeInfo = PROJECT_TYPES.find(type => type.id === this.project.type);
 			return typeInfo ? typeInfo.label : 'Unknown';
-		},
-
-		statusOptions() {
-			return [
-				{ id: 0, label: this.t('projectcreatoraio', 'Archived') },
-				{ id: 1, label: this.t('projectcreatoraio', 'Active') },
-			];
 		},
 
 		// Helper for Select component in Edit Mode
@@ -423,10 +424,12 @@ export default {
 
 		currentStatusLabel: {
 			get() {
-				return this.statusOptions.find(opt => opt.id === this.project.status);
+				return STATUS_OPTIONS.find(opt => opt.id === this.project.status);
 			},
 			set(option) {
-				this.project.status = option ? option.id : null;
+				if(option) {
+					this.project.status = option.id;
+				}
 			}
 		},
 
@@ -584,28 +587,45 @@ export default {
 
         /**
          * SAVE CHANGES
-         * Sends one single request to the server
+         * Sends only the allowed editable fields to the server
          */
         async saveProjectChanges() {
             this.savingProject = true;
             try {
                 const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/${this.project.id}`);
                 
-                // Send the PUT request
-                const response = await axios.put(url, this.editForm);
+                // 1. Define the whitelist of allowed fields
+                const allowedFields = [
+                    // Project Details
+                    'name', 'number', 'type', 'description',
+                    // Client Info
+                    'client_name', 'client_role', 'client_phone', 'client_email', 'client_address',
+                    // Location
+                    'loc_street', 'loc_city', 'loc_zip', 'external_ref',
+                    // Timeline
+                    'date_start', 'date_end'
+                ];
+
+                // 2. Construct the payload dynamically
+                const payload = {};
+                allowedFields.forEach(field => {
+                    if (this.editForm[field] !== undefined) {
+                        payload[field] = this.editForm[field];
+                    }
+                });
+
+                // 3. Send only the clean payload
+                const response = await axios.put(url, payload);
                 
-                // Update the local 'project' prop with the new values so the View updates
-                Object.assign(this.project, this.editForm);
-                
-                showSuccess(t('projectcreatoraio', 'Project details saved'));
-                this.isEditing = false;
+                showSuccess(t('projectcreatoraio', 'Section saved successfully'));
+                this.editingSection = null;
             } catch (error) {
                 console.error(error);
-                showError(t('projectcreatoraio', 'Could not save project details'));
+                showError(t('projectcreatoraio', 'Could not save details'));
             } finally {
                 this.savingProject = false;
             }
-        }
+        },
  	},
 }
 </script>
