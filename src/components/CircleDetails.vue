@@ -88,7 +88,7 @@
                             </div>
                             <div class="field-group full-width">
                                 <label class="modern-label">{{ t('projectcreatoraio', 'Description') }}</label>
-                                <NcRichContenteditable :value="project.description" :contenteditable="false" :multiline="true" class="description-box" />
+								<div class="value-text">{{ project.description }}</div>
                             </div>
                         </div>
                     </transition>
@@ -189,12 +189,12 @@
                         <div v-if="editingSection === 'timeline'" key="edit" class="grid-layout">
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><NcTextField type="date" :value.sync="editForm.date_start" /></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><NcTextField type="date" :value.sync="editForm.date_end" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="STATUS_OPTIONS" :disabled="!isAdmin"/></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="STATUS_OPTIONS"/></div>
                         </div>
                         <div v-else key="view" class="grid-layout">
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><div class="value-text">{{ project.date_start || '-' }}</div></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><div class="value-text">{{ project.date_end || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><div class="value-text">{{ currentStatusLabel ? currentStatusLabel.label : '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><div class="value-text">{{ currentStatusLabel.label || '-' }}</div></div>
                         </div>
                     </transition>
                 </div>
@@ -288,6 +288,121 @@
             </div>
 		</section>
 
+		<section>
+			<!-- SECTION: COMMUNICATION HUB -->
+            <div class="section-wrapper mt-4">
+                <div class="section-header">
+                    <h2>{{ t('projectcreatoraio', 'Latest Updates') }}</h2>
+                    
+                    <!-- Modern Pill Tabs -->
+                    <div class="tab-pills">
+                        <button 
+                            class="tab-item" 
+                            :class="{ 'active': activeTab === 'activity' }"
+                            @click="activeTab = 'activity'"
+                        >
+                            {{ t('projectcreatoraio', 'Activity') }}
+                        </button>
+                        <button 
+                            class="tab-item" 
+                            :class="{ 'active': activeTab === 'notes' }"
+                            @click="activeTab = 'notes'"
+                        >
+                            {{ t('projectcreatoraio', 'Private Notes') }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="detail-card communication-card">
+                    
+                    <!-- TAB 1: ACTIVITY FEED -->
+                    <div v-if="activeTab === 'activity'" class="feed-container">
+                        <div v-if="loadingActivity" class="feed-loader">
+                            <NcLoadingIcon :size="32" />
+                        </div>
+                        
+                        <div v-else-if="activityList.length > 0" class="activity-list">
+                            <div v-for="item in activityList" :key="item.id" class="feed-row">
+                                <!-- User Avatar -->
+                                <Avatar 
+                                    :user="item.actor_id" 
+                                    :disable-tooltip="false" 
+                                    :size="32" 
+                                    class="feed-avatar" 
+                                />
+                                
+                                <!-- Content Bubble -->
+                                <div class="feed-bubble">
+                                    <div class="feed-header">
+                                        <div class="feed-meta-left">
+                                            <span class="feed-user">{{ item.actor_id }}</span>
+                                            
+                                            <!-- Navigation Link to Card -->
+                                            <span class="feed-context">
+												<a 
+                                                    href="#" 
+                                                    class="card-link" 
+                                                    @click.prevent="openCard(item.card_id)"
+                                                    :title="t('projectcreatoraio', 'Go to card')"
+                                                >
+                                                    {{ t('projectcreatoraio', 'View Card') }}
+                                                </a>
+                                            </span>
+                                        </div>
+                                        
+                                        <span class="feed-date">{{ formatDate(item.creation_timestamp) }}</span>
+                                    </div>
+                                    
+                                    <div class="feed-message">
+                                        {{ item.message }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <NcEmptyContent v-else :title="t('projectcreatoraio', 'No recent activity')" />
+                    </div>
+
+                    <!-- TAB 2: NOTES FEED -->
+                    <div v-else class="feed-container">
+                        <div v-if="loadingNotes" class="feed-loader">
+                            <NcLoadingIcon :size="32" />
+                        </div>
+
+                        <div v-else-if="notesList.length > 0" class="notes-list">
+                            <div v-for="note in notesList" :key="note.id" class="note-card">
+                                <div class="note-header">
+                                    <div class="note-meta-left">
+                                        <span class="icon-note">📝</span>
+                                        
+                                        <!-- OPEN CARD LINK -->
+                                        <a 
+                                            v-if="note.cardId"
+                                            href="#" 
+                                            class="card-link" 
+                                            @click.prevent="openCard(note.cardId)"
+                                            :title="t('projectcreatoraio', 'Go to card')"
+                                        >
+                                            {{ t('projectcreatoraio', 'View Card') }}
+                                        </a>
+                                    </div>
+                                    
+                                    <span class="note-date">{{ formatDate(note.createdAt) }}</span>
+                                </div>
+                                
+                                <div class="note-body">
+                                    {{ note.content }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <NcEmptyContent v-else :title="t('projectcreatoraio', 'No notes found')" />
+                    </div>
+
+                </div>
+            </div>
+		</section>
+
 		<MemberList v-if="members.length" :list="members" />
 
         <Modal v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal && showSettingsModal" @close="showSettingsModal=false">
@@ -348,6 +463,7 @@ import CirclePasswordSettings from './CircleDetails/CirclePasswordSettings.vue'
 import FileTreeNode from './FileTreeNode.vue'
 import { getCurrentUser } from '@nextcloud/auth'
 import IconDeck from 'vue-material-design-icons/ViewColumn.vue'
+import IconCard from 'vue-material-design-icons/CardTextOutline.vue'
 
 export const PROJECT_TYPES = [
 	{ id: 0, label: t('projectcreatoraio', 'Combi') },
@@ -386,7 +502,8 @@ export default {
 		NcSelect,
 		NcChip,
 		NcTextField,
-		IconDeck
+		IconDeck,
+		IconCard
 	},
 
 	mixins: [CircleActionsMixin],
@@ -431,7 +548,16 @@ export default {
                 // Dates
                 date_start: '',
                 date_end: ''
-            }
+            },
+
+			// COMMUNICATION HUB DATA
+            activeTab: 'activity', // 'activity' or 'notes'
+            
+            activityList: [],
+            loadingActivity: false,
+            
+            notesList: [],
+            loadingNotes: false,
 		}
 	},
 	props: {
@@ -469,11 +595,11 @@ export default {
 
 		currentStatusLabel: {
 			get() {
-				return STATUS_OPTIONS.find(opt => opt.id === this.project.status);
+				return STATUS_OPTIONS.find(opt => opt.id === this.editForm.status) || STATUS_OPTIONS[0];
 			},
 			set(option) {
 				if(option) {
-					this.project.status = option.id;
+					this.editForm.status = option.id;
 				}
 			}
 		},
@@ -562,6 +688,16 @@ export default {
 			},
 			immediate: true,
 		},
+		// When project loads, fetch the data
+        'project.id': {
+            handler(val) {
+                if (val) {
+                    this.fetchLatestPrivateNotes();
+                    this.fetchLatestComments();
+                }
+            },
+            immediate: true
+        }
 	},
 
 	methods: {
@@ -653,13 +789,13 @@ export default {
                 // 1. Define the whitelist of allowed fields
                 const allowedFields = [
                     // Project Details
-                    'name', 'number', 'type', 'description',
+                    'name', 'number', 'type', 'description', 
                     // Client Info
                     'client_name', 'client_role', 'client_phone', 'client_email', 'client_address',
                     // Location
                     'loc_street', 'loc_city', 'loc_zip', 'external_ref',
                     // Timeline
-                    'date_start', 'date_end'
+                    'date_start', 'date_end', 'status'
                 ];
 
                 // 2. Construct the payload dynamically
@@ -710,6 +846,64 @@ export default {
                 console.warn('Could not hide iframe header. Likely a cross-origin restriction.', e);
             }
         },
+
+		/**
+         * 1. FETCH LATEST PRIVATE NOTES OF USER in the project
+         */
+        async fetchLatestPrivateNotes() {
+            this.loadingNotes = true;
+            try {
+                // Standard Deck Endpoint for Board Activity
+                const url = generateUrl(`/apps/deck/boards/${this.project.boardId}/notes/latest`);
+                const response = await axios.get(url);
+                this.notesList = response.data || [];
+            } catch (e) {
+                console.error("Could not fetch activity", e);
+                this.notesList = [];
+            } finally {
+                this.loadingNotes = false;
+            }
+        },
+
+		/**
+         * 2. FETCH Latest Comments in the Project (Custom API)
+         */
+        async fetchLatestComments() {
+            this.loadingActivity = true;
+            try {
+                // We assume you will create this endpoint in your controller
+                const url = generateUrl(`/apps/deck/boards/${this.project.boardId}/comments/latest`);
+                const response = await axios.get(url);
+                this.activityList = response.data || [];
+            } catch (e) {
+                console.error("Could not fetch notes", e);
+                this.activityList = [];
+            } finally {
+                this.loadingActivity = false;
+            }
+        },
+
+		/**
+         * Helper: Format Date (e.g. "Nov 24, 10:00 AM")
+         */
+        formatDate(timestamp) {
+            if (!timestamp) return '';
+            // Handle both Unix timestamp (Deck) and ISO string (Custom Note)
+            const date = typeof timestamp === 'number' 
+                ? new Date(timestamp * 1000) 
+                : new Date(timestamp);
+                
+            return date.toLocaleDateString(undefined, { 
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+            });
+        },
+		/**
+		 * Opens the specific card in a new tab
+		 */
+		openCard(card_id) {
+			const url = generateUrl(`/apps/deck/board/${this.project.boardId}/card/${card_id}`);
+			window.open(url, '_blank');
+		},
  	},
 }
 </script>
@@ -736,13 +930,6 @@ export default {
     align-items: center;
     margin-bottom: 10px;
     padding: 0 4px;
-}
-
-.modern-header {
-    font-size: 16px;
-    font-weight: 600;
-    color: #444444;
-    margin: 0;
 }
 
 .header-actions {
@@ -1021,5 +1208,190 @@ export default {
     background-image: var(--icon-deck-000); /* Requires deck app css loaded, or use generic icon */
     background-size: contain;
     background-repeat: no-repeat;
+}
+
+/* --- TAB SWITCHER (Pills) --- */
+.tab-pills {
+    display: flex;
+    background-color: #f4f4f4;
+    padding: 4px;
+    border-radius: 8px;
+    gap: 4px;
+}
+
+.tab-item {
+    border: none;
+    background: transparent;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-item:hover {
+    background-color: rgba(0,0,0,0.05);
+    color: #333;
+}
+
+.tab-item.active {
+    background-color: #ffffff;
+    color: var(--color-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* --- MAIN CARD & CONTAINER --- */
+.communication-card {
+    padding: 0; /* Edge to edge */
+    overflow: hidden;
+    height: 450px; /* Fixed height for scrolling */
+    display: flex;
+    flex-direction: column;
+}
+
+.feed-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background-color: #ffffff;
+}
+
+.feed-loader {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- NOTES FEED STYLES --- */
+.note-card {
+    background-color: #fffde7; /* Sticky Note Yellow */
+    border: 1px solid #f9f1a5;
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    transition: transform 0.2s;
+}
+
+.note-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+}
+
+.note-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.note-date {
+    font-size: 11px;
+    color: #888;
+    font-weight: 600;
+}
+
+.note-body {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.5;
+}
+
+.icon-note {
+    font-size: 14px;
+}
+
+/* --- ACTIVITY FEED STYLES --- */
+.feed-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+    width: 100%; /* Ensure the row itself is full width */
+}
+
+.feed-avatar {
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.feed-bubble {
+    background-color: #f5f7f9;
+    padding: 12px 16px;
+    border-radius: 4px 12px 12px 12px;
+    font-size: 14px;
+    color: var(--color-main-text);
+    
+    /* FULL WIDTH FIX */
+    flex-grow: 1;    /* Takes up all remaining space */
+    width: 100%;     /* Forces full width */
+    max-width: none; /* Removes the previous 85% limit */
+}
+
+.feed-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+    font-size: 12px;
+    gap: 12px;
+}
+
+.feed-meta-left {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.feed-user {
+    font-weight: 700;
+    color: #222;
+}
+
+/* Navigation Context (e.g. "on Card Name") */
+.feed-context {
+    color: #666;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-link {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: rgba(0,0,0,0.04);
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.card-link:hover {
+    background-color: rgba(0,0,0,0.08);
+    text-decoration: none;
+}
+
+.feed-date {
+    color: #888;
+    font-size: 11px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.feed-message {
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word; /* Prevents long words from overflowing */
 }
 </style>
