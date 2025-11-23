@@ -2,226 +2,268 @@
   - SPDX-FileCopyrightText: 2021 Nextcloud GmbH and Nextcloud contributors
   - SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-
 <template>
-	<div class="circle-details">
-		<!-- contact header -->
-		<DetailsHeader>
-			<!-- avatar and upload photo -->
-			<template #avatar="{avatarSize}">
-				<Avatar :disable-tooltip="true"
-					:display-name="circle.displayName"
-					:is-no-user="true"
-					:size="avatarSize" />
-			</template>
+    <div class="circle-details">
+        <DetailsHeader>
+            <template #avatar="{avatarSize}">
+                <Avatar :disable-tooltip="true" :display-name="circle.displayName" :is-no-user="true" :size="avatarSize" />
+            </template>
+            
+            <template #title>
+                <div v-if="loadingName" class="circle-name__loader icon-loading-small" />
+                <h2>{{ circle.displayName }}</h2>
+            </template>
+            
+            <template v-if="!circle.isOwner" #subtitle>
+                {{ t('contacts', 'Team owned by {owner}', { owner: circle.owner.displayName}) }}
+            </template>
+            
+            <template #actions>
+                <Button type="tertiary" :href="circleUrl" :class="copyLinkIcon" @click.stop.prevent="copyToClipboard(circleUrl)" />
+                
+                <Button v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal" @click="showSettingsModal = true">
+                    <template #icon><Cog :size="20" /></template>
+                    {{ t('contacts', 'Team settings') }}
+                </Button>
 
-			<!-- display name -->
-			<template #title>
-				<div v-if="loadingName" class="circle-name__loader icon-loading-small" />
-				<h2>
-					{{ circle.displayName }}
-				</h2>
-			</template>
+                <Button v-if="!circle.isPendingMember && !circle.isMember && circle.canJoin" :disabled="loadingJoin" class="primary" @click="joinCircle">
+                    <template #icon><Login :size="16" /></template>
+                    {{ t('contacts', 'Request to join') }}
+                </Button>
+            </template>
+        </DetailsHeader>
 
-			<!-- org, title -->
-			<template v-if="!circle.isOwner" #subtitle>
-				{{ t('contacts', 'Team owned by {owner}', { owner: circle.owner.displayName}) }}
-			</template>
+        <section v-if="project" class="project-details-container">
+            
+            <div class="section-wrapper">
+                <div class="section-header">
+                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Project Details') }}</h3>
+                    <div class="header-actions" v-if="isAdmin">
+                        <template v-if="editingSection === 'project'">
+                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+                                {{ t('projectcreatoraio', 'Save') }}
+                            </Button>
+                        </template>
+                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('project')">
+                            <template #icon><span class="icon-rename" /></template>
+                            {{ t('projectcreatoraio', 'Edit') }}
+                        </Button>
+                    </div>
+                </div>
 
-			<template #actions>
-				<!-- copy circle link -->
-				<Button type="tertiary"
-					:href="circleUrl"
-					:title="copyButtonText"
-					:class="copyLinkIcon"
-					@click.stop.prevent="copyToClipboard(circleUrl)" />
+                <div class="detail-card">
+                    <transition name="fade" mode="out-in">
+                        <div v-if="editingSection === 'project'" key="edit" class="grid-layout">
+                            <div class="field-group">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Project Name') }}</label>
+                                <NcTextField :value.sync="editForm.name" />
+                            </div>
+                            <div class="field-group">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Number') }}</label>
+                                <NcTextField :value.sync="editForm.number" />
+                            </div>
+                            <div class="field-group">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Type') }}</label>
+                                <NcSelect v-model="editFormTypeOption" :options="PROJECT_TYPES" />
+                            </div>
+                            <div class="field-group full-width">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Description') }}</label>
+                                <NcRichContenteditable :value.sync="editForm.description" :multiline="true" class="description-box input-mode" />
+                            </div>
+                        </div>
 
-				<!-- Team settings modal -->
-				<Button v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal" @click="showSettingsModal = true">
-					<template #icon>
-						<Cog :size="20" />
-					</template>
-					{{ t('contacts', 'Team settings') }}
-				</Button>
+                        <div v-else key="view" class="grid-layout">
+                            <div class="field-group">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Project Name') }}</label>
+                                <div class="value-text">{{ project.name }}</div>
+                            </div>
+                            <div class="field-group">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Number') }}</label>
+                                <div class="value-text">{{ project.number }}</div>
+                            </div>
+                            <div class="field-group">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Type') }}</label>
+                                <div class="value-text">{{ projectTypeLabel }}</div>
+                            </div>
+                            <div class="field-group full-width">
+                                <label class="modern-label">{{ t('projectcreatoraio', 'Description') }}</label>
+                                <NcRichContenteditable :value="project.description" :contenteditable="false" :multiline="true" class="description-box" />
+                            </div>
+                        </div>
+                    </transition>
+                </div>
+            </div>
 
-				<!-- Only show the join button if the circle is accepting requests -->
-				<Button v-if="!circle.isPendingMember && !circle.isMember && circle.canJoin"
-					:disabled="loadingJoin"
-					class="primary"
-					@click="joinCircle">
-					<template #icon>
-						<Login :size="16" />
-					</template>
-					{{ t('contacts', 'Request to join') }}
-				</Button>
-			</template>
-		</DetailsHeader>
+            <div class="section-wrapper mt-4">
+                <div class="section-header">
+                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Client Information') }}</h3>
+                    <div class="header-actions" v-if="isAdmin">
+                        <template v-if="editingSection === 'client'">
+                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+                                {{ t('projectcreatoraio', 'Save') }}
+                            </Button>
+                        </template>
+                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('client')">
+                            <template #icon><span class="icon-rename" /></template>
+                            {{ t('projectcreatoraio', 'Edit') }}
+                        </Button>
+                    </div>
+                </div>
 
-		<section v-if="project" class="project-details-section">
-			<div class="metadata-grid">
-				<div>
-					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Project') }}</ContentHeading>
-					<p>{{ project.name }}</p>
-				</div>
-				<div>
-					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Number') }}</ContentHeading>
-					<p>{{ project.number }}</p>
-				</div>
-				<div>
-					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Address') }}</ContentHeading>
-					<p>{{ project.address || t('projectcreatoraio', 'Not provided') }}</p>
-				</div>
-			</div>
+                <div class="detail-card">
+                    <transition name="fade" mode="out-in">
+                        <div v-if="editingSection === 'client'" key="edit" class="grid-layout">
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Name') }}</label><NcTextField :value.sync="editForm.client_name" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><NcTextField :value.sync="editForm.client_role" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><NcTextField :value.sync="editForm.client_phone" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><NcTextField :value.sync="editForm.client_email" /></div>
+                            <div class="field-group full-width"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><NcTextField :value.sync="editForm.client_address" /></div>
+                        </div>
+                        <div v-else key="view" class="grid-layout">
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Name') }}</label><div class="value-text">{{ project.client_name || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><div class="value-text">{{ project.client_role || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><div class="value-text">{{ project.client_phone || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><div class="value-text">{{ project.client_email || '-' }}</div></div>
+                            <div class="field-group full-width"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><div class="value-text">{{ project.client_address || '-' }}</div></div>
+                        </div>
+                    </transition>
+                </div>
+            </div>
 
-			<div class="metadata-grid">
-				<div>
-					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Type') }}</ContentHeading>
-					<p>{{ projectTypeLabel || t('projectcreatoraio', 'Not provided') }}</p>
-				</div>
-				<div>
-					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Description') }}</ContentHeading>
-					<RichContenteditable
-						:value="project.description"
-						:contenteditable="false"
-						:placeholder="t('projectcreatoraio', 'No description provided')"
-						class="project-description-content" />
-				</div>
-				<div class="status-section">
-					<ContentHeading :level="4">{{ t('projectcreatoraio', 'Status') }}</ContentHeading>
-					<NcSelect
-						v-model="currentStatusLabel"
-						:options="statusOptions"
-						:disabled="!isAdmin"
-						@update:modelValue="updateProjectStatus"
-						class="status-select" />
-				</div>
-			</div>
-		</section>
-		<div v-else class="loading-placeholder">
-			<NcLoadingIcon />
-		</div>
+            <div class="section-wrapper mt-4">
+                <div class="section-header">
+                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Location') }}</h3>
+                    <div class="header-actions" v-if="isAdmin">
+                        <template v-if="editingSection === 'location'">
+                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+                                {{ t('projectcreatoraio', 'Save') }}
+                            </Button>
+                        </template>
+                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('location')">
+                            <template #icon><span class="icon-rename" /></template>
+                            {{ t('projectcreatoraio', 'Edit') }}
+                        </Button>
+                    </div>
+                </div>
 
-		<!-- not a member -->
-		<template v-if="!circle.isMember">
-			<!-- Pending request validation -->
-			<NcEmptyContent v-if="circle.isPendingMember"
-				:name="t('contacts', 'Your request to join this team is pending approval')">
-				<template #icon>
-					<NcLoadingIcon :size="20" />
-				</template>
-			</NcEmptyContent>
+                <div class="detail-card">
+                    <transition name="fade" mode="out-in">
+                        <div v-if="editingSection === 'location'" key="edit" class="grid-layout">
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Street') }}</label><NcTextField :value.sync="editForm.loc_street" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'City') }}</label><NcTextField :value.sync="editForm.loc_city" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Zip') }}</label><NcTextField :value.sync="editForm.loc_zip" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Ref') }}</label><NcTextField :value.sync="editForm.external_ref" /></div>
+                        </div>
+                        <div v-else key="view" class="grid-layout">
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Street') }}</label><div class="value-text">{{ project.loc_street || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'City') }}</label><div class="value-text">{{ project.loc_city || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Zip') }}</label><div class="value-text">{{ project.loc_zip || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Ref') }}</label><div class="value-text">{{ project.external_ref || '-' }}</div></div>
+                        </div>
+                    </transition>
+                </div>
+            </div>
 
-			<NcEmptyContent v-else
-				:name="t('contacts', 'You are not a member of {circle}', { circle: circle.displayName})">
-				<template #icon>
-					<IconAccountGroup :size="20" />
-				</template>
-			</NcEmptyContent>
-		</template>
+            <div class="section-wrapper mt-4">
+                <div class="section-header">
+                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Timeline') }}</h3>
+                    <div class="header-actions" v-if="isAdmin">
+                        <template v-if="editingSection === 'timeline'">
+                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+                                {{ t('projectcreatoraio', 'Save') }}
+                            </Button>
+                        </template>
+                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('timeline')">
+                            <template #icon><span class="icon-rename" /></template>
+                            {{ t('projectcreatoraio', 'Edit') }}
+                        </Button>
+                    </div>
+                </div>
 
-		<section v-else>
-			<ContentHeading>
-				{{ t('contacts', 'Team resources') }}
-			</ContentHeading>
-			<p>{{ t('contacts', 'Anything shared with this team will show up here') }}</p>
-			<div v-for="provider in resourceProviders" :key="provider.id">
-				<ContentHeading>
-					<span v-show="false" class="provider__icon" v-html="provider.icon" /> {{ provider.name }}
-				</ContentHeading>
+                <div class="detail-card">
+                    <transition name="fade" mode="out-in">
+                        <div v-if="editingSection === 'timeline'" key="edit" class="grid-layout">
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><NcTextField type="date" :value.sync="editForm.date_start" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><NcTextField type="date" :value.sync="editForm.date_end" /></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="statusOptions" :disabled="!isAdmin"/></div>
+                        </div>
+                        <div v-else key="view" class="grid-layout">
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><div class="value-text">{{ project.date_start || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><div class="value-text">{{ project.date_end || '-' }}</div></div>
+                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><div class="value-text">{{ currentStatusLabel ? currentStatusLabel.label : '-' }}</div></div>
+                        </div>
+                    </transition>
+                </div>
+            </div>
+        </section>
 
-				<ul>
-					<ListItem v-for="resource in resourcesForProvider(provider.id)"
-						:key="resource.url"
-						class="resource"
-						:name="resource.label"
-						@click="redirect(resource.url)">
-						<template #icon>
-							<span v-if="resource.iconEmoji" class="resource__icon">
-								{{ resource.iconEmoji }}
-							</span>
-							<span v-else-if="resource.iconSvg" class="resource__icon" v-html="resource.iconSvg" />
-							<span v-else-if="resource.iconURL" class="resource__icon">
-								<img :src="resource.iconURL" alt="">
-							</span>
-						</template>
-					</ListItem>
-				</ul>
-			</div>
-			<div class="files-container">
-				<div v-if="files" class="project-files-section">
-					<h2>{{ t('contacts', 'Root Tree') }}</h2>
-					<FileTreeNode 
-						v-for="file in files.shared" 
-						:key="file.id"
-						:node="file"/>
+        <div v-else class="loading-placeholder">
+            <NcLoadingIcon />
+        </div>
 
-					<FileTreeNode 
-						v-for="file in files.private" 
-						:key="file.id"
-						:node="file"/>
-				</div>
-				<div v-else class="empty-content">
-					{{ t('contacts', 'No project files found for this team.') }}
-				</div>
-			</div>
-		</section>
+        <section v-if="circle.isMember">
+            <ContentHeading>{{ t('contacts', 'Team resources') }}</ContentHeading>
+             <p>{{ t('contacts', 'Anything shared with this team will show up here') }}</p>
+             <div v-for="provider in resourceProviders" :key="provider.id">
+                <ContentHeading>
+                    <span v-show="false" class="provider__icon" v-html="provider.icon" /> {{ provider.name }}
+                </ContentHeading>
+                <ul>
+                    <ListItem v-for="resource in resourcesForProvider(provider.id)" :key="resource.url" class="resource" :name="resource.label" @click="redirect(resource.url)">
+                        <template #icon>
+                            <span v-if="resource.iconEmoji" class="resource__icon">{{ resource.iconEmoji }}</span>
+                            <span v-else-if="resource.iconSvg" class="resource__icon" v-html="resource.iconSvg" />
+                            <span v-else-if="resource.iconURL" class="resource__icon"><img :src="resource.iconURL" alt=""></span>
+                        </template>
+                    </ListItem>
+                </ul>
+            </div>
 
-		<MemberList v-if="members.length" :list="members" />
+            <div class="files-container">
+                <div v-if="files" class="project-files-section">
+                    <h2>{{ t('contacts', 'Root Tree') }}</h2>
+                    <FileTreeNode v-for="file in files.shared" :key="file.id" :node="file"/>
+                    <FileTreeNode v-for="file in files.private" :key="file.id" :node="file"/>
+                </div>
+                <div v-else class="empty-content">
+                    {{ t('contacts', 'No project files found for this team.') }}
+                </div>
+            </div>
+        </section>
 
-		<Modal 
-			v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal && showSettingsModal" @close="showSettingsModal=false">
-			<div class="circle-settings">
-				<h2>{{ t('contacts', 'Team settings') }}</h2>
+        <template v-if="!circle.isMember">
+            <NcEmptyContent v-if="circle.isPendingMember" :name="t('contacts', 'Your request to join this team is pending approval')">
+                <template #icon><NcLoadingIcon :size="20" /></template>
+            </NcEmptyContent>
+            <NcEmptyContent v-else :name="t('contacts', 'You are not a member of {circle}', { circle: circle.displayName})">
+                <template #icon><IconAccountGroup :size="20" /></template>
+            </NcEmptyContent>
+        </template>
 
-				<h3>{{ t('contacts', 'Team name') }}</h3>
-				<input v-model="circle.displayName"
-					:readonly="!circle.isOwner"
-					:placeholder="t('contacts', 'Team name')"
-					type="text"
-					autocomplete="off"
-					autocorrect="off"
-					spellcheck="false"
-					name="displayname"
-					@input="onNameChangeDebounce">
+        <MemberList v-if="members.length" :list="members" />
 
-				<h3>{{ t('contacts', 'Description') }}</h3>
-				<RichContenteditable :value.sync="circle.description"
-					:auto-complete="onAutocomplete"
-					:maxlength="1024"
-					:multiline="true"
-					:contenteditable="circle.isOwner"
-					:placeholder="descriptionPlaceholder"
-					class="circle-details-section__description"
-					@update:value="onDescriptionChangeDebounce" />
-
-				<h3>{{ t('contacts', 'Settings') }}</h3>
-				<CircleConfigs class="circle-details-section__configs" :circle="circle" />
-				<CirclePasswordSettings class="circle-details-section__configs" :circle="circle" />
-
-				<h3>{{ t('contacts', 'Actions') }}</h3>
-				<!-- leave circle -->
-				<Button v-if="circle.canLeave"
-					type="warning"
-					@click="confirmLeaveCircle">
-					<template #icon>
-						<Logout :size="16" />
-					</template>
-					{{ t('contacts', 'Leave team') }}
-				</Button>
-
-				<!-- delete circle -->
-				<Button v-if="circle.canDelete"
-					type="error"
-					href="#"
-					@click.prevent.stop="confirmDeleteCircle">
-					<template #icon>
-						<IconDelete :size="20" />
-					</template>
-					{{ t('contacts', 'Delete team') }}
-				</Button>
-			</div>
-		</Modal>
-	</div>
+        <Modal v-if="(circle.isOwner || circle.isAdmin) && !circle.isPersonal && showSettingsModal" @close="showSettingsModal=false">
+            <div class="circle-settings">
+                <h2>{{ t('contacts', 'Team settings') }}</h2>
+                <h3>{{ t('contacts', 'Team name') }}</h3>
+                <input v-model="circle.displayName" :readonly="!circle.isOwner" type="text" @input="onNameChangeDebounce">
+                <h3>{{ t('contacts', 'Settings') }}</h3>
+                <CircleConfigs :circle="circle" />
+                <CirclePasswordSettings :circle="circle" />
+                <h3>{{ t('contacts', 'Actions') }}</h3>
+                <Button v-if="circle.canLeave" type="warning" @click="confirmLeaveCircle">
+                    <template #icon><Logout :size="16" /></template>{{ t('contacts', 'Leave team') }}
+                </Button>
+                <Button v-if="circle.canDelete" type="error" @click.prevent.stop="confirmDeleteCircle">
+                    <template #icon><IconDelete :size="20" /></template>{{ t('contacts', 'Delete team') }}
+                </Button>
+            </div>
+        </Modal>
+    </div>
 </template>
 
 <script>
@@ -240,9 +282,11 @@ import {
 	NcListItem as ListItem,
 	NcLoadingIcon,
 	NcModal as Modal,
-	NcRichContenteditable as RichContenteditable,
-	NcSelect
+	NcSelect,
+	NcTextField
 } from '@nextcloud/vue'
+
+import NcRichContenteditable from '@nextcloud/vue/components/NcRichContenteditable'
 import NcChip from '@nextcloud/vue/components/NcChip'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import Login from 'vue-material-design-icons/Login.vue'
@@ -287,10 +331,11 @@ export default {
 		Modal,
 		NcEmptyContent,
 		NcLoadingIcon,
-		RichContenteditable,
+		NcRichContenteditable,
 		FileTreeNode,
 		NcSelect,
-		NcChip
+		NcChip,
+		NcTextField
 	},
 
 	mixins: [CircleActionsMixin],
@@ -303,11 +348,37 @@ export default {
 
 	data() {
 		return {
+			PROJECT_TYPES, // exposing types 
+
 			loadingDescription: false,
 			loadingName: false,
 			showSettingsModal: false,
 			showMembersModal: false,
 			resources: null,
+
+			// NEW DATA FOR EDIT MODE
+			editingSection: null, // 'project', 'client', 'location', 'timeline'            
+			savingProject: false,
+            editForm: {
+                name: '',
+                number: '',
+                type: 0,
+                description: '',
+                // Client
+                client_name: '',
+                client_role: '',
+                client_phone: '',
+                client_email: '',
+                client_address: '',
+                // Location
+                loc_street: '',
+                loc_city: '',
+                loc_zip: '',
+                external_ref: '',
+                // Dates
+                date_start: '',
+                date_end: ''
+            }
 		}
 	},
 	props: {
@@ -338,6 +409,16 @@ export default {
 				{ id: 0, label: this.t('projectcreatoraio', 'Archived') },
 				{ id: 1, label: this.t('projectcreatoraio', 'Active') },
 			];
+		},
+
+		// Helper for Select component in Edit Mode
+        editFormTypeOption: {
+            get() {
+                return PROJECT_TYPES.find(opt => opt.id === this.editForm.type) || PROJECT_TYPES[0];
+            },
+            set(option) {
+                this.editForm.type = option ? option.id : 0;
+            }
 		},
 
 		currentStatusLabel: {
@@ -470,200 +551,304 @@ export default {
 				this.loadingName = false
 			}
 		},
-		async updateProjectStatus(status) {
-			try {
-				if (!this.isAdmin) {
-					return;
-				}
-				
-				const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/${this.project.id}/status`);
 
-				const response = await axios.put(`${url}`, { status: status.id }, {
-					headers: {
-						'OCS-APIRequest': 'true',
-						'Content-Type': 'application/json'
-					}
-				});
-
-				window.OC.Notification.show(t('projectcreatoraio', 'Status updated'))
-			} catch(error) {
-				console.error(error);
-				window.OC.Notification.show(t('projectcreatoraio', 'Update failed'), { type: 'error' });
-			}
-		},
 		redirect(url) {
 			window.open(url, '_self');
-		}
+		},
+
+		/**
+         * START EDITING A SPECIFIC SECTION
+         * @param {string} section - 'project', 'client', 'location', or 'timeline'
+         */
+        startEditing(section) {
+            // 1. Copy current data to editForm
+            this.editForm = JSON.parse(JSON.stringify(this.project));
+            
+            // 2. Ensure nulls become strings
+            Object.keys(this.editForm).forEach(k => {
+                if (this.editForm[k] === null) this.editForm[k] = '';
+            });
+
+            // 3. Set active section
+            this.editingSection = section;
+        },
+
+		/**
+         * CANCEL EDIT
+         * Discards changes and closes inputs
+         */
+        cancelEditing() {
+            this.editingSection = null;
+            this.editForm = {};
+        },
+
+        /**
+         * SAVE CHANGES
+         * Sends one single request to the server
+         */
+        async saveProjectChanges() {
+            this.savingProject = true;
+            try {
+                const url = generateUrl(`/apps/projectcreatoraio/api/v1/projects/${this.project.id}`);
+                
+                // Send the PUT request
+                const response = await axios.put(url, this.editForm);
+                
+                // Update the local 'project' prop with the new values so the View updates
+                Object.assign(this.project, this.editForm);
+                
+                showSuccess(t('projectcreatoraio', 'Project details saved'));
+                this.isEditing = false;
+            } catch (error) {
+                console.error(error);
+                showError(t('projectcreatoraio', 'Could not save project details'));
+            } finally {
+                this.savingProject = false;
+            }
+        }
  	},
 }
 </script>
 
 <style lang="scss" scoped>
+/* =========================================
+   1. MODERN DASHBOARD STYLES (Project Details)
+   ========================================= */
+
+.project-details-container {
+    max-width: 900px;
+    margin: 20px auto 60px auto;
+    font-family: var(--font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+}
+
+.section-wrapper {
+    margin-bottom: 24px;
+}
+
+/* HEADERS */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 4px;
+}
+
+.modern-header {
+    font-size: 16px;
+    font-weight: 600;
+    color: #444444;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* CARDS */
+.detail-card {
+    background-color: var(--color-main-background, #fff);
+    border: 1px solid var(--color-border, #ededed);
+    border-radius: 12px;
+    padding: 24px;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.detail-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-color: #dcdcdc;
+}
+
+/* GRID */
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px 32px;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+/* LABELS & VALUES */
+.field-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.modern-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #888888;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.value-text {
+    font-size: 15px;
+    color: var(--color-main-text, #222);
+    line-height: 1.5;
+    min-height: 20px;
+}
+
+/* DESCRIPTION */
+.description-box {
+    display: block;
+    width: 100%;
+    min-height: 60px;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    color: var(--color-main-text, #222);
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+.fade-enter-from, .fade-leave-to {
+    opacity: 0;
+}
+
+.field-group :deep(.nc-textfield-wrapper),
+.field-group :deep(.nc-select-wrapper) {
+    width: 100%;
+}
+
+
+/* =========================================
+   2. RESTORED LEGACY STYLES (Resources, Files, Members)
+   ========================================= */
+
+/* Main Layout Wrappers for non-project sections */
 .app-content-details header,
-.app-content-details section {
-	max-width: 800px;
-	margin: auto;
-	margin-bottom: 36px;
-	@media screen and (max-width: 1024px) {
-		padding: 0 20px;
+.app-content-details section:not(.project-details-container) {
+    max-width: 800px;
+    margin: auto;
+    margin-bottom: 36px;
+    @media screen and (max-width: 1024px) {
+        padding: 0 20px;
+    }
+}
 
-	}
+/* Restore Avatar Header sizing */
+.app-content-details header :deep(.contact-header__avatar) {
+    width: 75px !important;
+}
 
-	&:deep(.contact-header__avatar) {
-		width: 75px !important;
-	}
+.app-content-details header :deep(.contact-header__no-wrap) {
+    flex-grow: 1;
+}
 
-	&:deep(.contact-header__no-wrap) {
-		flex-grow: 1;
-	}
-
-	&:deep(.contact-header__actions) {
-		flex-grow: 0;
-	}
+.app-content-details header :deep(.contact-header__actions) {
+    flex-grow: 0;
 }
 
 .circle-name__loader {
-	margin-left: 8px;
+    margin-left: 8px;
 }
 
 .circle-details {
-	padding-inline: 20px;
+    padding-inline: 20px;
 }
 
-.circle-details-section {
-	&:not(:first-of-type) {
-		margin-top: 24px;
-	}
-
-	&__actions {
-		display: flex;
-		a, button {
-			margin-right: 8px;
-		}
-	}
-
-	&__description {
-		max-width: 800px;
-	}
-}
-
-.avatar-box {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.avatar-list {
-	display: flex;
-	flex-wrap: wrap;
-	flex-grow: 1;
-	gap: 12px;
-}
-
-:deep(.app-content-list) {
-	max-width: 100%;
-	border: 0;
-}
-
-.circle-settings {
-	margin: 12px;
-}
-
+/* Restore Resource List Styles & Icons */
 .provider__icon {
-	display: inline-block;
-	width: 24px;
-	height: 24px;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
 }
 
 .resource {
-	&__icon {
-		width: 44px;
-		height: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		text-align: center;
-		svg {
-			width: 20px;
-			height: 20px;
-		}
-		img {
-			border-radius: var(--border-radius-pill);
-			overflow: hidden;
-			width: 32px;
-			height: 32px;
-		}
-	}
+    &__icon {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        svg {
+            width: 20px;
+            height: 20px;
+        }
+        img {
+            border-radius: var(--border-radius-pill);
+            overflow: hidden;
+            width: 32px;
+            height: 32px;
+        }
+    }
 
-	&:deep(.line-one__name) {
-		font-weight: normal;
-	}
+    &:deep(.line-one__name) {
+        font-weight: normal;
+    }
 }
 
-.project-details-section {
-    display: flex;
-    flex-direction: column;
-    gap: 24px; /* A bit more space between sections */
+/* Restore File Tree & Lists */
+:deep(.app-content-list) {
+    max-width: 100%;
+    border: 0;
+}
+
+.files-container {
     margin-top: 24px;
 }
 
-.project-header {
+/* Restore Member List Layout */
+.avatar-box {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 16px; /* Increased gap for better spacing */
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 16px;
 }
 
-.project-name {
-    margin: 0;
-    font-size: 1.7em;
+.avatar-list {
+    display: flex;
+    flex-wrap: wrap;
+    flex-grow: 1;
+    gap: 12px;
+}
+
+/* =========================================
+   3. SETTINGS MODAL STYLES
+   ========================================= */
+.circle-settings {
+    margin: 20px;
+    padding-bottom: 20px;
+}
+
+.circle-settings h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: var(--color-main-text);
+}
+
+.circle-settings h3 {
+    font-size: 16px;
     font-weight: 600;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: var(--color-text-maxcontrast);
 }
 
-/* NcChip will now be styled by the component library, no custom CSS needed for it. */
-
-.metadata-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 24px;
+.circle-settings input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
 }
 
-.metadata-grid p {
-    margin-top: 4px;
-    color: var(--color-text-light);
+.circle-settings button,
+.circle-settings .button-vue {
+    margin-right: 10px;
+    margin-top: 10px;
 }
 
-/* Style for the description content to match Nextcloud's look and feel */
-.project-description-content {
-    margin-top: 4px;
-    color: var(--color-text-light);
-    line-height: 1.5;
-}
-
-.status-section {
-    /* Styles for the status section remain the same */
-}
-
-.status-chip {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-weight: 600;
-    margin-top: 4px;
-}
-
-.status-chip.status--active {
-    background-color: var(--color-success-element);
-    color: var(--color-success-element-text);
-}
-
-.status-chip.status--archived {
-    background-color: var(--color-main-background-border);
-    color: var(--color-text-light);
-}
-
-.status-select {
-    max-width: 250px;
+.circle-details-section__configs {
+    margin-bottom: 15px;
 }
 </style>
