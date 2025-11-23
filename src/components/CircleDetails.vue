@@ -190,8 +190,6 @@
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><NcTextField type="date" :value.sync="editForm.date_start" /></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><NcTextField type="date" :value.sync="editForm.date_end" /></div>
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="STATUS_OPTIONS" :disabled="!isAdmin"/></div>
-
-							{{  currentStatusLabel  }}
                         </div>
                         <div v-else key="view" class="grid-layout">
                             <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><div class="value-text">{{ project.date_start || '-' }}</div></div>
