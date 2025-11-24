@@ -269,7 +269,7 @@
                     </div>
                 </div>
                 <div v-else class="empty-workspace">
-                    <NcEmptyContent :title="t('projectcreatoraio', 'No Deck Board linked')" />
+                    <NcEmptyContent :name="t('projectcreatoraio', 'No Deck Board linked')" />
                 </div>
 
                 <div v-if="whiteboardUrl" class="workspace-card">
@@ -292,9 +292,9 @@
 			<!-- SECTION: COMMUNICATION HUB -->
             <div class="section-wrapper mt-4">
                 <div class="section-header">
-                    <h2>{{ t('projectcreatoraio', 'Latest Updates') }}</h2>
+                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Latest Updates') }}</h3>
                     
-                    <!-- Modern Pill Tabs -->
+                    <!-- TAB SWITCHER -->
                     <div class="tab-pills">
                         <button 
                             class="tab-item" 
@@ -321,46 +321,36 @@
                             <NcLoadingIcon :size="32" />
                         </div>
                         
-                        <div v-else-if="activityList.length > 0" class="activity-list">
+                        <div v-else-if="activityList && activityList.length > 0" class="activity-list">
                             <div v-for="item in activityList" :key="item.id" class="feed-row">
-                                <!-- User Avatar -->
-                                <Avatar 
-                                    :user="item.actor_id" 
-                                    :disable-tooltip="false" 
-                                    :size="32" 
-                                    class="feed-avatar" 
-                                />
+                                <Avatar :user="item.actor_id" :disable-tooltip="false" :size="32" class="feed-avatar" />
                                 
-                                <!-- Content Bubble -->
                                 <div class="feed-bubble">
                                     <div class="feed-header">
                                         <div class="feed-meta-left">
                                             <span class="feed-user">{{ item.actor_id }}</span>
-                                            
-                                            <!-- Navigation Link to Card -->
                                             <span class="feed-context">
-												<a 
-                                                    href="#" 
-                                                    class="card-link" 
-                                                    @click.prevent="openCard(item.card_id)"
-                                                    :title="t('projectcreatoraio', 'Go to card')"
-                                                >
-                                                    {{ t('projectcreatoraio', 'View Card') }}
+                                                <a href="#" class="card-link" @click.prevent="openCard(item)" :name="t('projectcreatoraio', 'Go to card')">
+                                                    {{ t('projectcreatoraio', 'Go to card') }}
                                                 </a>
                                             </span>
                                         </div>
-                                        
                                         <span class="feed-date">{{ formatDate(item.creation_timestamp) }}</span>
                                     </div>
-                                    
-                                    <div class="feed-message">
-                                        {{ item.message }}
-                                    </div>
+                                    <div class="feed-message">{{ item.message }}</div>
                                 </div>
                             </div>
                         </div>
                         
-                        <NcEmptyContent v-else :title="t('projectcreatoraio', 'No recent activity')" />
+                        <!-- EMPTY STATE: ACTIVITY -->
+                        <NcEmptyContent v-else :name="t('projectcreatoraio', 'No recent activity')">
+                            <template #icon>
+                                <IconMessage :size="44" />
+                            </template>
+                            <template #desc>
+                                {{ t('projectcreatoraio', 'Comments made on the Deck board will appear here.') }}
+                            </template>
+                        </NcEmptyContent>
                     </div>
 
                     <!-- TAB 2: NOTES FEED -->
@@ -369,34 +359,30 @@
                             <NcLoadingIcon :size="32" />
                         </div>
 
-                        <div v-else-if="notesList.length > 0" class="notes-list">
+                        <div v-else-if="notesList && notesList.length > 0" class="notes-list">
                             <div v-for="note in notesList" :key="note.id" class="note-card">
                                 <div class="note-header">
                                     <div class="note-meta-left">
                                         <span class="icon-note">📝</span>
-                                        
-                                        <!-- OPEN CARD LINK -->
-                                        <a 
-                                            v-if="note.cardId"
-                                            href="#" 
-                                            class="card-link" 
-                                            @click.prevent="openCard(note.cardId)"
-                                            :title="t('projectcreatoraio', 'Go to card')"
-                                        >
-                                            {{ t('projectcreatoraio', 'View Card') }}
+                                        <a v-if="note.cardId" href="#" class="card-link" @click.prevent="openCard(note)">
+                                            {{ t('projectcreatoraio', 'Go to card') }}
                                         </a>
                                     </div>
-                                    
                                     <span class="note-date">{{ formatDate(note.createdAt) }}</span>
                                 </div>
-                                
-                                <div class="note-body">
-                                    {{ note.content }}
-                                </div>
+                                <div class="note-body">{{ note.content }}</div>
                             </div>
                         </div>
 
-                        <NcEmptyContent v-else :title="t('projectcreatoraio', 'No notes found')" />
+                        <!-- EMPTY STATE: NOTES -->
+                        <NcEmptyContent v-else :name="t('projectcreatoraio', 'No private notes found')">
+                            <template #icon>
+                                <IconNote :size="44" />
+                            </template>
+                            <template #desc>
+                                {{ t('projectcreatoraio', 'Private notes you add to cards will be listed here.') }}
+                            </template>
+                        </NcEmptyContent>
                     </div>
 
                 </div>
