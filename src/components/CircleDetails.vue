@@ -330,7 +330,7 @@
                                         <div class="feed-meta-left">
                                             <span class="feed-user">{{ item.actor_id }}</span>
                                             <span class="feed-context">
-                                                <a href="#" class="card-link" @click.prevent="openCard(item)" :name="t('projectcreatoraio', 'Go to card')">
+                                                <a href="#" class="card-link" @click.prevent="openCard(item.card_id)" :name="t('projectcreatoraio', 'Go to card')">
                                                     {{ t('projectcreatoraio', 'Go to card') }}
                                                 </a>
                                             </span>
@@ -364,7 +364,7 @@
                                 <div class="note-header">
                                     <div class="note-meta-left">
                                         <span class="icon-note">📝</span>
-                                        <a v-if="note.cardId" href="#" class="card-link" @click.prevent="openCard(note)">
+                                        <a v-if="note.cardId" href="#" class="card-link" @click.prevent="openCard(note.cardId)">
                                             {{ t('projectcreatoraio', 'Go to card') }}
                                         </a>
                                     </div>
