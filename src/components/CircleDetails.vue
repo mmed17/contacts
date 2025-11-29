@@ -465,6 +465,8 @@ export const STATUS_OPTIONS = [
 	{ id: 1, label: t('projectcreatoraio', 'Active') },
 ];
 
+export const DEFAULT_BASE_URL = 'https://excalidraw.loket.site';
+
 export default {
 	name: 'CircleDetails',
 
@@ -667,8 +669,10 @@ export default {
         },
 
         whiteboardUrl() {
-            if (!this.project || !this.project.whiteboardId) return null; 
-            return generateUrl(`/apps/whiteboard/board/${this.project.whiteboardId}`);
+			console.log("this.project", this.project);
+            if (!this.project || !this.project.white_board_id) return null;
+
+            return `${DEFAULT_BASE_URL}/#room=${this.project.white_board_id}`;
         }
 	},
 
@@ -720,7 +724,7 @@ export default {
 		},
 		startCommentsPolling() {
 			if(this.commentsPollingObj) return;
-			
+
 			this.commentsPollingObj = setInterval(() => this.fetchLatestComments(), 5000);
 		},
 
