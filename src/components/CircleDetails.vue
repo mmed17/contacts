@@ -35,102 +35,104 @@
         </DetailsHeader>
 
         <section v-if="project" class="project-details-container">
-            <div class="section-wrapper">
-                <div class="section-header">
-                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Project Details') }}</h3>
-                    <div class="header-actions" v-if="isAdmin">
-                        <template v-if="editingSection === 'project'">
-                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
-                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
-                                {{ t('projectcreatoraio', 'Save') }}
-                            </Button>
-                        </template>
-                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('project')">
-                            <template #icon><span class="icon-rename" /></template>
-                            {{ t('projectcreatoraio', 'Edit') }}
-                        </Button>
-                    </div>
-                </div>
+            <div class="inline-spaced">
+				<div class="section-wrapper flex-1">
+					<div class="section-header">
+						<h3 class="modern-header">{{ t('projectcreatoraio', 'Project Details') }}</h3>
+						<div class="header-actions" v-if="isAdmin">
+							<template v-if="editingSection === 'project'">
+								<Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+								<Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+									{{ t('projectcreatoraio', 'Save') }}
+								</Button>
+							</template>
+							<Button v-else-if="!editingSection" type="tertiary" @click="startEditing('project')">
+								<template #icon><span class="icon-rename" /></template>
+								{{ t('projectcreatoraio', 'Edit') }}
+							</Button>
+						</div>
+					</div>
 
-                <div class="detail-card">
-                    <transition name="fade" mode="out-in">
-                        <div v-if="editingSection === 'project'" key="edit" class="grid-layout">
-                            <div class="field-group">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Project Name') }}</label>
-                                <NcTextField :value.sync="editForm.name" />
-                            </div>
-                            <div class="field-group">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Number') }}</label>
-                                <NcTextField :value.sync="editForm.number" />
-                            </div>
-                            <div class="field-group">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Type') }}</label>
-                                <NcSelect v-model="editFormTypeOption" :options="PROJECT_TYPES" />
-                            </div>
-                            <div class="field-group full-width">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Description') }}</label>
-                                <NcRichContenteditable :value.sync="editForm.description" :multiline="true" class="description-box input-mode" />
-                            </div>
-                        </div>
+					<div class="detail-card">
+						<transition name="fade" mode="out-in">
+							<div v-if="editingSection === 'project'" key="edit" class="grid-layout">
+								<div class="field-group">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Project Name') }}</label>
+									<NcTextField :value.sync="editForm.name" />
+								</div>
+								<div class="field-group">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Number') }}</label>
+									<NcTextField :value.sync="editForm.number" />
+								</div>
+								<div class="field-group">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Type') }}</label>
+									<NcSelect v-model="editFormTypeOption" :options="PROJECT_TYPES" />
+								</div>
+								<div class="field-group full-width">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Description') }}</label>
+									<NcRichContenteditable :value.sync="editForm.description" :multiline="true" class="description-box input-mode" />
+								</div>
+							</div>
 
-                        <div v-else key="view" class="grid-layout">
-                            <div class="field-group">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Project Name') }}</label>
-                                <div class="value-text">{{ project.name }}</div>
-                            </div>
-                            <div class="field-group">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Number') }}</label>
-                                <div class="value-text">{{ project.number }}</div>
-                            </div>
-                            <div class="field-group">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Type') }}</label>
-                                <div class="value-text">{{ projectTypeLabel }}</div>
-                            </div>
-                            <div class="field-group full-width">
-                                <label class="modern-label">{{ t('projectcreatoraio', 'Description') }}</label>
-								<div class="value-text">{{ project.description }}</div>
-                            </div>
-                        </div>
-                    </transition>
-                </div>
-            </div>
+							<div v-else key="view" class="grid-layout">
+								<div class="field-group">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Project Name') }}</label>
+									<div class="value-text">{{ project.name }}</div>
+								</div>
+								<div class="field-group">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Number') }}</label>
+									<div class="value-text">{{ project.number }}</div>
+								</div>
+								<div class="field-group">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Type') }}</label>
+									<div class="value-text">{{ projectTypeLabel }}</div>
+								</div>
+								<div class="field-group full-width">
+									<label class="modern-label">{{ t('projectcreatoraio', 'Description') }}</label>
+									<div class="value-text">{{ project.description }}</div>
+								</div>
+							</div>
+						</transition>
+					</div>
+				</div>
 
-            <div class="section-wrapper mt-4">
-                <div class="section-header">
-                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Client Information') }}</h3>
-                    <div class="header-actions" v-if="isAdmin">
-                        <template v-if="editingSection === 'client'">
-                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
-                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
-                                {{ t('projectcreatoraio', 'Save') }}
-                            </Button>
-                        </template>
-                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('client')">
-                            <template #icon><span class="icon-rename" /></template>
-                            {{ t('projectcreatoraio', 'Edit') }}
-                        </Button>
-                    </div>
-                </div>
+				<div class="section-wrapper mt-4 flex-1">
+					<div class="section-header">
+						<h3 class="modern-header">{{ t('projectcreatoraio', 'Client Information') }}</h3>
+						<div class="header-actions" v-if="isAdmin">
+							<template v-if="editingSection === 'client'">
+								<Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+								<Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+									{{ t('projectcreatoraio', 'Save') }}
+								</Button>
+							</template>
+							<Button v-else-if="!editingSection" type="tertiary" @click="startEditing('client')">
+								<template #icon><span class="icon-rename" /></template>
+								{{ t('projectcreatoraio', 'Edit') }}
+							</Button>
+						</div>
+					</div>
 
-                <div class="detail-card">
-                    <transition name="fade" mode="out-in">
-                        <div v-if="editingSection === 'client'" key="edit" class="grid-layout">
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Name') }}</label><NcTextField :value.sync="editForm.client_name" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><NcTextField :value.sync="editForm.client_role" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><NcTextField :value.sync="editForm.client_phone" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><NcTextField :value.sync="editForm.client_email" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><NcTextField :value.sync="editForm.client_address" /></div>
-                        </div>
-                        <div v-else key="view" class="grid-layout">
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Name') }}</label><div class="value-text">{{ project.client_name || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><div class="value-text">{{ project.client_role || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><div class="value-text">{{ project.client_phone || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><div class="value-text">{{ project.client_email || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><div class="value-text">{{ project.client_address || '-' }}</div></div>
-                        </div>
-                    </transition>
-                </div>
-            </div>
+					<div class="detail-card">
+						<transition name="fade" mode="out-in">
+							<div v-if="editingSection === 'client'" key="edit" class="grid-layout">
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Name') }}</label><NcTextField :value.sync="editForm.client_name" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><NcTextField :value.sync="editForm.client_role" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><NcTextField :value.sync="editForm.client_phone" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><NcTextField :value.sync="editForm.client_email" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><NcTextField :value.sync="editForm.client_address" /></div>
+							</div>
+							<div v-else key="view" class="grid-layout">
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Name') }}</label><div class="value-text">{{ project.client_name || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Role') }}</label><div class="value-text">{{ project.client_role || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Phone') }}</label><div class="value-text">{{ project.client_phone || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Email') }}</label><div class="value-text">{{ project.client_email || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Address') }}</label><div class="value-text">{{ project.client_address || '-' }}</div></div>
+							</div>
+						</transition>
+					</div>
+				</div>
+			</div>
 
             <div class="section-wrapper mt-4">
                 <div class="section-header">
@@ -299,14 +301,14 @@
                         <button 
                             class="tab-item" 
                             :class="{ 'active': activeTab === 'activity' }"
-                            @click="activeTab = 'activity'"
+                            @click="selectTab('activity')"
                         >
                             {{ t('projectcreatoraio', 'Activity') }}
                         </button>
                         <button 
                             class="tab-item" 
                             :class="{ 'active': activeTab === 'notes' }"
-                            @click="activeTab = 'notes'"
+                            @click="selectTab('notes')"
                         >
                             {{ t('projectcreatoraio', 'Private Notes') }}
                         </button>
@@ -544,6 +546,9 @@ export default {
             
             notesList: [],
             loadingNotes: false,
+
+			commentsPollingObj: null,
+			notesPollingObj: null,
 		}
 	},
 	props: {
@@ -678,8 +683,10 @@ export default {
         'project.id': {
             handler(val) {
                 if (val) {
-                    this.fetchLatestPrivateNotes();
-                    this.fetchLatestComments();
+					this.fetchLatestComments();
+					this.fetchLatestPrivateNotes();
+
+					this.selectTab('activity');
                 }
             },
             immediate: true
@@ -687,6 +694,36 @@ export default {
 	},
 
 	methods: {
+		selectTab(tabName) {
+			this.activeTab = tabName;
+
+			if (this.activeTab === 'activity') {
+				this.stopNotesPolling();
+				this.startCommentsPolling();
+			} else if (this.activeTab === 'notes') {
+				this.stopCommentsPolling();
+				this.startNotesPolling();
+			}
+		},
+		stopCommentsPolling() {
+			this.commentsPollingObj && clearInterval(this.commentsPollingObj);
+			this.commentsPollingObj = null;
+		},
+		stopNotesPolling() {
+			this.notesPollingObj && clearInterval(this.notesPollingObj);
+			this.notesPollingObj = null;
+		},
+		startNotesPolling() {
+			if(this.notesPollingObj) return;
+
+			this.notesPollingObj = setInterval(() => this.fetchLatestPrivateNotes(), 5000);
+		},
+		startCommentsPolling() {
+			if(this.commentsPollingObj) return;
+			
+			this.commentsPollingObj = setInterval(() => this.fetchLatestComments(), 5000);
+		},
+
 		async fetchTeamResources() {
 			const response = await axios.get(generateOcsUrl(`/teams/${this.circle.id}/resources`))
 			this.resources = response.data.ocs.data.resources
@@ -837,7 +874,6 @@ export default {
          * 1. FETCH LATEST PRIVATE NOTES OF USER in the project
          */
         async fetchLatestPrivateNotes() {
-            this.loadingNotes = true;
             try {
                 // Standard Deck Endpoint for Board Activity
                 const url = generateUrl(`/apps/deck/boards/${this.project.boardId}/notes/latest`);
@@ -846,8 +882,6 @@ export default {
             } catch (e) {
                 console.error("Could not fetch activity", e);
                 this.notesList = [];
-            } finally {
-                this.loadingNotes = false;
             }
         },
 
@@ -855,7 +889,6 @@ export default {
          * 2. FETCH Latest Comments in the Project (Custom API)
          */
         async fetchLatestComments() {
-            this.loadingActivity = true;
             try {
                 // We assume you will create this endpoint in your controller
                 const url = generateUrl(`/apps/deck/boards/${this.project.boardId}/comments/latest`);
@@ -864,8 +897,6 @@ export default {
             } catch (e) {
                 console.error("Could not fetch notes", e);
                 this.activityList = [];
-            } finally {
-                this.loadingActivity = false;
             }
         },
 
@@ -906,6 +937,8 @@ export default {
 }
 
 .section-wrapper {
+	display: flex;
+	flex-direction: column;
     margin-bottom: 24px;
 }
 
@@ -930,6 +963,7 @@ export default {
     border-radius: 12px;
     padding: 24px;
     transition: box-shadow 0.2s ease, transform 0.2s ease;
+	height: 100%;
 }
 
 .detail-card:hover {
@@ -1380,4 +1414,20 @@ export default {
     white-space: pre-wrap;
     word-break: break-word; /* Prevents long words from overflowing */
 }
+
+.inline-spaced {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	gap: 15px;
+}
+
+.flex-1 {
+	flex: 1;
+}
+
+.modern-header {
+	margin: 10px !important;
+}
+
 </style>
