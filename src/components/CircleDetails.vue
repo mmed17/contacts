@@ -134,73 +134,75 @@
 				</div>
 			</div>
 
-            <div class="section-wrapper mt-4">
-                <div class="section-header">
-                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Location') }}</h3>
-                    <div class="header-actions" v-if="isAdmin">
-                        <template v-if="editingSection === 'location'">
-                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
-                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
-                                {{ t('projectcreatoraio', 'Save') }}
-                            </Button>
-                        </template>
-                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('location')">
-                            <template #icon><span class="icon-rename" /></template>
-                            {{ t('projectcreatoraio', 'Edit') }}
-                        </Button>
-                    </div>
-                </div>
+			<div class="inline-spaced">
+				<div class="section-wrapper mt-4 flex-1">
+					<div class="section-header">
+						<h3 class="modern-header">{{ t('projectcreatoraio', 'Location') }}</h3>
+						<div class="header-actions" v-if="isAdmin">
+							<template v-if="editingSection === 'location'">
+								<Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+								<Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+									{{ t('projectcreatoraio', 'Save') }}
+								</Button>
+							</template>
+							<Button v-else-if="!editingSection" type="tertiary" @click="startEditing('location')">
+								<template #icon><span class="icon-rename" /></template>
+								{{ t('projectcreatoraio', 'Edit') }}
+							</Button>
+						</div>
+					</div>
+	
+					<div class="detail-card">
+						<transition name="fade" mode="out-in">
+							<div v-if="editingSection === 'location'" key="edit" class="grid-layout">
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Street') }}</label><NcTextField :value.sync="editForm.loc_street" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'City') }}</label><NcTextField :value.sync="editForm.loc_city" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Zip') }}</label><NcTextField :value.sync="editForm.loc_zip" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Ref') }}</label><NcTextField :value.sync="editForm.external_ref" /></div>
+							</div>
+							<div v-else key="view" class="grid-layout">
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Street') }}</label><div class="value-text">{{ project.loc_street || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'City') }}</label><div class="value-text">{{ project.loc_city || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Zip') }}</label><div class="value-text">{{ project.loc_zip || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Ref') }}</label><div class="value-text">{{ project.external_ref || '-' }}</div></div>
+							</div>
+						</transition>
+					</div>
+				</div>
+				<div class="section-wrapper mt-4 flex-1">
+					<div class="section-header">
+						<h3 class="modern-header">{{ t('projectcreatoraio', 'Timeline') }}</h3>
+						<div class="header-actions" v-if="isAdmin">
+							<template v-if="editingSection === 'timeline'">
+								<Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
+								<Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
+									{{ t('projectcreatoraio', 'Save') }}
+								</Button>
+							</template>
+							<Button v-else-if="!editingSection" type="tertiary" @click="startEditing('timeline')">
+								<template #icon><span class="icon-rename" /></template>
+								{{ t('projectcreatoraio', 'Edit') }}
+							</Button>
+						</div>
+					</div>
+	
+					<div class="detail-card">
+						<transition name="fade" mode="out-in">
+							<div v-if="editingSection === 'timeline'" key="edit" class="grid-layout">
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><NcTextField type="date" :value.sync="editForm.date_start" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><NcTextField type="date" :value.sync="editForm.date_end" /></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="STATUS_OPTIONS"/></div>
+							</div>
+							<div v-else key="view" class="grid-layout">
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><div class="value-text">{{ project.date_start || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><div class="value-text">{{ project.date_end || '-' }}</div></div>
+								<div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><div class="value-text">{{ currentStatusLabel.label || '-' }}</div></div>
+							</div>
+						</transition>
+					</div>
+				</div>
+			</div>
 
-                <div class="detail-card">
-                    <transition name="fade" mode="out-in">
-                        <div v-if="editingSection === 'location'" key="edit" class="grid-layout">
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Street') }}</label><NcTextField :value.sync="editForm.loc_street" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'City') }}</label><NcTextField :value.sync="editForm.loc_city" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Zip') }}</label><NcTextField :value.sync="editForm.loc_zip" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Ref') }}</label><NcTextField :value.sync="editForm.external_ref" /></div>
-                        </div>
-                        <div v-else key="view" class="grid-layout">
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Street') }}</label><div class="value-text">{{ project.loc_street || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'City') }}</label><div class="value-text">{{ project.loc_city || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Zip') }}</label><div class="value-text">{{ project.loc_zip || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Ref') }}</label><div class="value-text">{{ project.external_ref || '-' }}</div></div>
-                        </div>
-                    </transition>
-                </div>
-            </div>
-
-            <div class="section-wrapper mt-4">
-                <div class="section-header">
-                    <h3 class="modern-header">{{ t('projectcreatoraio', 'Timeline') }}</h3>
-                    <div class="header-actions" v-if="isAdmin">
-                        <template v-if="editingSection === 'timeline'">
-                            <Button @click="cancelEditing" :disabled="savingProject">{{ t('projectcreatoraio', 'Cancel') }}</Button>
-                            <Button type="primary" @click="saveProjectChanges" :disabled="savingProject">
-                                {{ t('projectcreatoraio', 'Save') }}
-                            </Button>
-                        </template>
-                        <Button v-else-if="!editingSection" type="tertiary" @click="startEditing('timeline')">
-                            <template #icon><span class="icon-rename" /></template>
-                            {{ t('projectcreatoraio', 'Edit') }}
-                        </Button>
-                    </div>
-                </div>
-
-                <div class="detail-card">
-                    <transition name="fade" mode="out-in">
-                        <div v-if="editingSection === 'timeline'" key="edit" class="grid-layout">
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><NcTextField type="date" :value.sync="editForm.date_start" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><NcTextField type="date" :value.sync="editForm.date_end" /></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><NcSelect v-model="currentStatusLabel" :options="STATUS_OPTIONS"/></div>
-                        </div>
-                        <div v-else key="view" class="grid-layout">
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Start') }}</label><div class="value-text">{{ project.date_start || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'End') }}</label><div class="value-text">{{ project.date_end || '-' }}</div></div>
-                            <div class="field-group"><label class="modern-label">{{ t('projectcreatoraio', 'Status') }}</label><div class="value-text">{{ currentStatusLabel.label || '-' }}</div></div>
-                        </div>
-                    </transition>
-                </div>
-            </div>
         </section>
 
         <div v-else class="loading-placeholder">
