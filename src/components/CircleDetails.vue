@@ -100,7 +100,7 @@
                         </transition>
                     </div>
                 </div>
-
+<!-- 
                 <div class="section-wrapper">
                     <div class="section-header">
                         <h3 class="modern-header">{{ t('projectcreatoraio', 'Timeline') }}</h3>
@@ -134,9 +134,9 @@
                              <Timeline></Timeline>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
-                <div class="section-wrapper stats-card">
+                <!-- <div class="section-wrapper stats-card">
                     <div class="section-header">
                         <h3 class="modern-header">{{ t('projectcreatoraio', 'Progress') }}</h3>
                     </div>
@@ -155,7 +155,7 @@
                             class="segmented-style"
                         />
                     </div>
-                </div>
+                </div> -->
 
             </div>
             <div class="bottom-row">
@@ -192,6 +192,20 @@
                     </div>
                 </div>
             </div>
+
+            <!-- D-RASCI-VF Roles Section -->
+            <CircleDRASCIRoles 
+                v-if="project && project.boardId"
+                :board-id="project.boardId"
+                :members="members"
+            />
+
+            <!-- Project Timeline Gantt Chart -->
+            <GanttChart
+                v-if="project"
+                :project-id="project.id"
+                :is-admin="isAdmin"
+            />
 
         </section>
 
@@ -402,12 +416,14 @@ import CircleConfigs from './CircleDetails/CircleConfigs.vue'
 import MemberList from './MemberList/MemberList.vue'
 import ContentHeading from './CircleDetails/ContentHeading.vue'
 import CirclePasswordSettings from './CircleDetails/CirclePasswordSettings.vue'
+import CircleDRASCIRoles from './CircleDetails/CircleDRASCIRoles.vue'
+import GanttChart from './CircleDetails/GanttChart.vue'
 import FileTreeNode from './FileTreeNode.vue'
 import { getCurrentUser } from '@nextcloud/auth'
 import IconDeck from 'vue-material-design-icons/ViewColumn.vue'
 import IconCard from 'vue-material-design-icons/CardTextOutline.vue'
-import Timeline from './Timeline.vue';
-import ProgressWheel from './ProgressWheel.vue';
+// import Timeline from './Timeline.vue';
+// import ProgressWheel from './ProgressWheel.vue';
 
 export const PROJECT_TYPES = [
     { id: 0, label: t('projectcreatoraio', 'Combi') },
@@ -421,7 +437,7 @@ export const STATUS_OPTIONS = [
     { id: 1, label: t('projectcreatoraio', 'Active') },
 ];
 
-export const DEFAULT_BASE_URL = 'https://excalidraw.loket.site';
+export const DEFAULT_BASE_URL = 'http://localhost:5500';
 
 export default {
     name: 'CircleDetails',
@@ -452,8 +468,10 @@ export default {
         IconCard,
         IconMessage,
         IconNote,
-        Timeline,
-        ProgressWheel,
+        // Timeline,
+        // ProgressWheel,
+        CircleDRASCIRoles,
+        GanttChart,
     },
 
     mixins: [CircleActionsMixin],
@@ -629,10 +647,12 @@ export default {
         },
 
         whiteboardUrl() {
-            console.log("this.project", this.project);
+            // console.log("this.project", this.project);
             if (!this.project || !this.project.white_board_id) return null;
 
-            return `${DEFAULT_BASE_URL}/#room=${this.project.white_board_id}`;
+            // Use the new dedicated viewer route
+            // This loads the standalone whiteboard viewer instead of the Files app
+            return generateUrl(`/apps/whiteboard/view/${this.project.white_board_id}`);
         }
     },
 
